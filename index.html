@@ -18,6 +18,6 @@
 window.__dotAppStarted=false;
 window.addEventListener('error',function(e){const m=document.getElementById('authMsg');if(m&&!window.__dotAppStarted)m.textContent='تعذر تشغيل النظام: '+(e.message||'خطأ في ملفات التشغيل');});
 window.addEventListener('unhandledrejection',function(e){const m=document.getElementById('authMsg');if(m&&!window.__dotAppStarted)m.textContent='تعذر الاتصال بالخدمة. أعد فتح الصفحة.';});
-</script><script type="module" src="./app.js?v=24.0.2"></script><script>
-if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./sw.js?v=24.0.2',{updateViaCache:'none'});await r.update();}catch(e){console.warn(e)}})}
+</script><script type="module" src="./app.js?v=24.0.3"></script><script>
+if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const r=await navigator.serviceWorker.register('./sw.js?v=24.0.3',{updateViaCache:'none'});await r.update();}catch(e){console.warn(e)}})}
 </script></body></html>

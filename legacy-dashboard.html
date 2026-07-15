@@ -682,6 +682,23 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 @media (min-width:901px) and (max-width:1250px){.v19-primary-cards,.v21-tax-cards,.v21-quarter-grid{grid-template-columns:repeat(2,minmax(200px,1fr));}}
 </style>
 
+
+<style id="v24-mobile-fullscreen-fix">
+@media (max-width:900px){
+  html,body{height:auto;min-height:100%;overflow:auto!important}
+  #app{display:block;height:auto;min-height:100vh}
+  .sidebar{display:none!important}
+  main{width:100%!important;max-width:none!important;padding:18px 12px 90px!important;overflow:visible!important}
+  .page-head{align-items:flex-start!important}
+  .page-head h2{font-size:22px!important}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .panel,.card,.filterbar{max-width:100%!important}
+}
+@media (max-width:560px){
+  .cards{grid-template-columns:1fr!important}
+  main{padding:14px 10px 80px!important}
+}
+</style>
 </head>
 <body>
 <div id="app">

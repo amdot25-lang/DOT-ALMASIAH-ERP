@@ -1,0 +1,17 @@
+DOT ALMASIAH — النشر من Google Cloud Shell
+
+1) افتح: https://shell.cloud.google.com
+2) سجل الدخول بالبريد المالك لمشروع dot-diamond.
+3) ارفع ملف ZIP النهائي إلى Cloud Shell من زر Upload.
+4) نفذ الأوامر التالية بعد استبدال اسم الملف إن لزم:
+
+unzip -o DOT_ALMASIAH_v22_FIREBASE_DEPLOY_READY.zip -d dot-erp
+cd dot-erp/DOT_ALMASIAH_FIREBASE_ERP
+npx firebase-tools login --no-localhost
+npx firebase-tools use dot-diamond
+npx firebase-tools deploy --only hosting
+
+الرابط المتوقع بعد النجاح:
+https://dot-diamond.web.app
+
+ملاحظة: قواعد Firestore نُشرت يدويًا مسبقًا، لذلك أمر النشر هنا خاص بالموقع فقط.

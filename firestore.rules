@@ -1,0 +1,46 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isOwner() { return signedIn() && request.auth.token.email == 'amdot25@gmail.com'; }
+    function myUser() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function activeSupervisor() { return signedIn() && myUser().data.role == 'supervisor' && myUser().data.status == 'active'; }
+
+    match /users/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && ((request.auth.token.email == 'amdot25@gmail.com' && request.resource.data.role == 'owner')
+            || (request.resource.data.role == 'supervisor' && request.resource.data.status == 'pending'));
+      allow read: if isOwner() || (signedIn() && request.auth.uid == uid);
+      allow update: if isOwner();
+      allow delete: if false;
+    }
+
+    match /sales/{saleId} {
+      allow create: if isOwner() || (activeSupervisor()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'pending');
+      allow read: if isOwner() || (activeSupervisor() && resource.data.createdBy == request.auth.uid);
+      allow update: if isOwner();
+      allow delete: if false;
+    }
+
+    match /publicStats/{docId} {
+      allow read: if signedIn() && (isOwner() || activeSupervisor());
+      allow write: if isOwner();
+    }
+
+    match /purchases/{id} { allow read, create: if isOwner(); allow update, delete: if false; }
+    match /expenses/{id} { allow read, create: if isOwner(); allow update, delete: if false; }
+
+    match /storeEntries/{id} { allow read, write: if isOwner(); }
+    match /broadcasterCommissions/{id} { allow read, write: if isOwner(); }
+    match /broadcasterAliases/{id} { allow read, write: if isOwner(); }
+    match /importBatches/{id} { allow read, write: if isOwner(); }
+    match /lockedMonths/{id} { allow read, write: if isOwner(); }
+    match /appSettings/{id} { allow read, write: if isOwner(); }
+    match /migrations/{id} { allow read, write: if isOwner(); }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

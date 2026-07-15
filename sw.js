@@ -1,12 +1,5 @@
-const CACHE='dot-almasiah-v24-0-3';
-const STATIC=['./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
-self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET') return;
-  const url=new URL(event.request.url);
-  if(url.origin!==location.origin) return;
-  const isCode=url.pathname.endsWith('.js')||url.pathname.endsWith('.html')||url.pathname==='/'||url.pathname.endsWith('/');
-  if(isCode){event.respondWith(fetch(event.request,{cache:'no-store'}).catch(()=>caches.match(event.request)));return;}
-  event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(c=>c.put(event.request,copy));return response;})));
-});
+const CACHE='dot-almasiah-v25-unified-1';
+const ASSETS=['./','./index.html','./dashboard.html','./cloud-bridge.js','./firebase-config.js','./historical-data.json','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET')return;if(u.origin===location.origin&&(u.pathname.endsWith('.js')||u.pathname.endsWith('.html')||u.pathname.endsWith('.json'))){e.respondWith(fetch(e.request).then(r=>{const x=r.clone();caches.open(CACHE).then(c=>c.put(e.request,x));return r}).catch(()=>caches.match(e.request)));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});

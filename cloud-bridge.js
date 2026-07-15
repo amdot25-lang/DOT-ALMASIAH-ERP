@@ -49,4 +49,4 @@ onAuthStateChanged(auth,async user=>{
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
   state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.0.0').catch(console.warn)}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.1.0').catch(console.warn)}

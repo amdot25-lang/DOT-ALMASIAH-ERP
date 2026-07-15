@@ -724,7 +724,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=25.0.0"></script>
+<script type="module" src="./cloud-bridge.js?v=25.1.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -911,9 +911,59 @@ function computeStoreSeries(entries, openingDiamonds, openingCostInc){
   return out;
 }
 
+function cloudUnifiedLedgerEntries(){
+  const cloud = window.DOT_CLOUD?.state;
+  if(!cloud?.ready) return [];
+  const out=[];
+  // العمليات السحابية المعتمدة فقط تدخل في مؤشرات المتجر والهدف والأرباح.
+  (cloud.sales||[]).filter(x=>x.status==='approved').forEach(x=>out.push({
+    id:'cloud-sale-'+x.id,
+    date:x.saleDate || x.approvedAt?.toDate?.().toISOString?.().slice(0,10) || '',
+    diamondsSold:num(x.diamonds),
+    salesIncl:num(x.amount),
+    diamondsPurchased:0,
+    purchasesIncl:0,
+    paymentSource:x.payment==='المتجر'?'other':'bank',
+    notes:`مبيعة سحابية ${x.orderNumber||x.id||''}`,
+    cloudSource:'sale',
+    cloudId:x.id,
+    cloudOrderNumber:x.orderNumber||'',
+    createdAt:x.createdAt?.toDate?.().toISOString?.() || ''
+  }));
+  (cloud.purchases||[]).forEach(x=>out.push({
+    id:'cloud-purchase-'+x.id,
+    date:x.purchaseDate || x.createdAt?.toDate?.().toISOString?.().slice(0,10) || '',
+    diamondsSold:0,
+    salesIncl:0,
+    diamondsPurchased:num(x.diamonds),
+    purchasesIncl:num(x.amount),
+    paymentSource:'bank',
+    notes:`مشتريات سحابية ${x.supplier||''}`,
+    cloudSource:'purchase',
+    cloudId:x.id,
+    createdAt:x.createdAt?.toDate?.().toISOString?.() || ''
+  }));
+  (cloud.expenses||[]).forEach(x=>out.push({
+    id:'cloud-expense-'+x.id,
+    date:x.expenseDate || x.createdAt?.toDate?.().toISOString?.().slice(0,10) || '',
+    diamondsSold:0,
+    salesIncl:0,
+    diamondsPurchased:0,
+    purchasesIncl:0,
+    otherExpenses:num(x.amount),
+    expenseVatMode:'non_deductible',
+    paymentSource:'other',
+    notes:`مصروف سحابي ${x.category||''} ${x.payee||''}`.trim(),
+    cloudSource:'expense',
+    cloudId:x.id,
+    createdAt:x.createdAt?.toDate?.().toISOString?.() || ''
+  }));
+  return out.filter(x=>x.date);
+}
 function getStoreSeries(){
   const s = loadSettings();
-  return computeStoreSeries(loadT(DB.store), s.openingDiamonds||0, s.openingCostInc||0);
+  const unified = loadT(DB.store).concat(cloudUnifiedLedgerEntries());
+  return computeStoreSeries(unified, s.openingDiamonds||0, s.openingCostInc||0);
 }
 
 // quick single-record estimate used only for the live preview inside the add/edit form
@@ -1328,10 +1378,10 @@ function renderStore(main){
             <td>${paymentSourceLabel(e.paymentSource)}</td>
             <td style="color:${e.netProfit>=0?'var(--success)':'var(--danger)'}">${sar(e.netProfit)}</td>
             <td style="max-width:140px;white-space:normal;">${e.notes||''}</td>
-            <td><div class="row-actions">
+            <td>${e.cloudSource?`<span class="cloud-status approved">سحابي</span>`:`<div class="row-actions">
               <button class="icon-btn edit-store" data-id="${e.id}">✎</button>
               <button class="icon-btn del del-store" data-id="${e.id}">🗑</button>
-            </div></td>
+            </div>`}</td>
           </tr>`).join('') : `<tr><td colspan="16"><div class="empty">لا توجد سجلات ضمن هذه الفترة</div></td></tr>`}
         </tbody>
       </table></div>
@@ -4596,7 +4646,7 @@ function renderCloudExpenses(main){if(cloudRole()!=='owner')return;const rows=wi
 function renderCloudStock(main){const st=Number(window.DOT_CLOUD.state.stats?.stockDiamonds||0),sales=currentCloudSales().filter(x=>x.status==='approved'),out=sales.reduce((a,x)=>a+Number(x.diamonds||0),0),level=Math.min(100,st/3000000*100);main.innerHTML=`<div class="page-head"><div><h2>${cloudRole()==='owner'?'حركة المخزون':'المخزون المتاح'}</h2><div class="sub">الرصيد المتاح دون كشف تكلفة الشراء للمشرف.</div></div></div><div class="stock-hero"><div class="panel"><div class="small">الرصيد الحالي</div><div class="stock-number">${cloudNum(st)}</div><div class="small">ماسة متاحة</div><div class="stock-meter"><i style="width:${level}%"></i></div></div><div class="panel"><h3>ملخص الحركة السحابية</h3><div class="summary-list"><div class="summary-item"><span>الألماس المباع المعتمد</span><b>${cloudNum(out)}</b></div>${cloudRole()==='owner'?`<div class="summary-item"><span>الألماس المشترى سحابيًا</span><b>${cloudNum((window.DOT_CLOUD.state.purchases||[]).reduce((a,x)=>a+Number(x.diamonds||0),0))}</b></div>`:''}<div class="summary-item"><span>الحالة</span><b>${st<300000?'منخفض':'جيد'}</b></div></div></div></div>`}
 function renderCloudUsers(main){if(cloudRole()!=='owner')return;const rows=window.DOT_CLOUD.state.users||[];main.innerHTML=`<div class="page-head"><div><h2>المشرفون والصلاحيات</h2><div class="sub">فئتان فقط: المالك والمشرف. المشرف لا يرى المذيعين أو الأرباح أو الضريبة أو المصاريف.</div></div></div><div class="alert info">الحسابات الجديدة تبدأ بانتظار التفعيل. فعّل فقط الحسابات المعروفة لك.</div><div class="table-wrap"><table><thead><tr><th>الاسم</th><th>البريد</th><th>الفئة</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${rows.map(u=>`<tr><td>${u.name||'—'}</td><td>${u.email||'—'}</td><td>${u.role==='owner'?'المالك':'المشرف'}</td><td>${u.status||'—'}</td><td>${u.role==='owner'?'—':`<button class="btn sm" data-user-status="${u.id}" data-next="${u.status==='active'?'disabled':'active'}">${u.status==='active'?'إيقاف':'تفعيل'}</button>`}</td></tr>`).join('')}</tbody></table></div>`;document.querySelectorAll('[data-user-status]').forEach(b=>b.onclick=()=>window.DOT_CLOUD.setUserStatus(b.dataset.userStatus,b.dataset.next))}
 window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';app.view=role==='owner'?'dashboard':'supervisorHome';render()});
-window.addEventListener('dot-cloud-update',()=>{if(cloudReady()&&['supervisorHome','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers'].includes(app.view))render()});
+window.addEventListener('dot-cloud-update',()=>{if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers'].includes(app.view))render()});
 document.getElementById('cloud-logout')?.addEventListener('click',()=>window.DOT_CLOUD?.logout());
 document.getElementById('mobile-menu-btn')?.addEventListener('click',()=>{document.querySelector('.sidebar')?.classList.toggle('mobile-open');document.getElementById('mobile-overlay')?.classList.toggle('show')});
 document.getElementById('mobile-overlay')?.addEventListener('click',closeMobileNav);

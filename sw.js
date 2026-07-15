@@ -1,4 +1,4 @@
-const CACHE='dot-almasiah-erp-v1';
+const CACHE='dot-almasiah-erp-v2';
 const ASSETS=['./','./index.html','./app.js','./firebase-config.js','./manifest.webmanifest','./icon-192.svg','./icon-512.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

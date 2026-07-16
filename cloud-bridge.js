@@ -326,4 +326,9 @@ onAuthStateChanged(auth,async user=>{
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
   state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=28.0.0').catch(console.warn)}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});
+}
+if('caches' in window){
+  caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});
+}

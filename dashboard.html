@@ -851,6 +851,22 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
   .sync-status-pill{left:10px;top:62px}
 }
 </style>
+
+<style id="v26-command-center-style">
+.command-center{display:grid;gap:16px;margin-bottom:18px}
+.command-center-hero{position:relative;overflow:hidden;padding:22px;border:1px solid rgba(201,162,75,.32);border-radius:22px;background:radial-gradient(circle at 85% 10%,rgba(214,172,78,.14),transparent 34%),linear-gradient(145deg,rgba(22,22,25,.98),rgba(12,12,14,.98));box-shadow:0 18px 42px rgba(0,0,0,.28)}
+.command-center-hero:after{content:"";position:absolute;inset:auto -90px -110px auto;width:250px;height:250px;border-radius:50%;border:1px solid rgba(214,172,78,.12)}
+.command-center-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1}.command-center-title h2{margin:0;color:#fff;font-size:22px}.command-center-title p{margin:7px 0 0;color:var(--text-dim);font-size:11px;line-height:1.8}
+.command-center-score{min-width:112px;text-align:center;padding:12px;border-radius:16px;border:1px solid rgba(214,172,78,.32);background:rgba(214,172,78,.07)}.command-center-score strong{display:block;font-size:22px;color:var(--gold-bright)}.command-center-score span{font-size:9px;color:var(--text-dim)}
+.command-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.command-card{min-height:190px;padding:17px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(160deg,rgba(24,24,27,.98),rgba(15,15,17,.98));box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.command-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}.command-card-head h3{margin:0;color:#fff;font-size:14px}.command-card-icon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;border:1px solid rgba(214,172,78,.28);background:rgba(214,172,78,.07);color:var(--gold-bright)}
+.command-metric{margin-bottom:12px}.command-metric span{display:block;color:var(--text-dim);font-size:9px}.command-metric b{display:block;margin-top:4px;color:#fff;font-size:18px;direction:ltr;text-align:right}.command-metric b.gold{color:var(--gold-bright)}.command-metric b.good{color:#7ce0a4}.command-metric b.warn{color:#efc264}
+.command-progress{height:8px;border-radius:999px;background:#0b0b0d;border:1px solid rgba(255,255,255,.05);overflow:hidden;margin:10px 0 7px}.command-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#8e6a22,#e1ba5d)}.command-foot{font-size:9px;color:var(--text-faint);line-height:1.7}
+.command-actions{display:grid;gap:8px}.command-action{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid var(--border)}.command-action span{font-size:10px;color:var(--text-dim)}.command-action b{color:#fff;font-size:13px}.command-action.alert{border-color:rgba(220,75,75,.25);background:rgba(220,75,75,.05)}
+.command-summary{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.command-summary-panel{border:1px solid var(--border);border-radius:18px;padding:17px;background:rgba(18,18,20,.96)}.command-summary-panel h3{margin:0 0 12px;color:var(--gold-bright);font-size:14px}.command-summary-list{display:grid;gap:9px}.command-summary-item{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:rgba(255,255,255,.022);border:1px solid var(--border)}.command-summary-item i{width:8px;height:8px;border-radius:50%;background:#78d69c;margin-top:6px;flex:0 0 auto}.command-summary-item.warn i{background:#efc264}.command-summary-item.danger i{background:#e06565}.command-summary-item p{margin:0;color:var(--text-dim);font-size:10px;line-height:1.8}.command-summary-item strong{color:#fff}
+.command-chart{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:120px;padding-top:12px}.command-chart-col{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}.command-chart-bar{width:100%;max-width:28px;min-height:4px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,#e2bb5f,#73501a)}.command-chart-col small{font-size:8px;color:var(--text-faint)}.command-chart-col b{font-size:8px;color:var(--text-dim);font-weight:500}.command-center-toggle{display:flex;justify-content:flex-end;margin-top:4px}.command-center-toggle button{font-size:10px}
+@media(max-width:1100px){.command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.command-center-hero{padding:17px}.command-center-title{flex-direction:column}.command-center-score{width:100%;display:flex;align-items:center;justify-content:space-between}.command-grid{grid-template-columns:1fr}.command-card{min-height:auto}.command-summary{grid-template-columns:1fr}}
+</style>
 </style>
 </head>
 <body>
@@ -906,7 +922,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=25.12.0"></script>
+<script type="module" src="./cloud-bridge.js?v=26.0.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -4748,7 +4764,7 @@ render=function(){
    واجهة واحدة · مالك / مشرف
    ========================================================= */
 const CLOUD_OWNER_NAV=[
-{id:'dashboard',label:'لوحة التحكم',ic:'◈'},
+{id:'dashboard',label:'غرفة القيادة',ic:'◈'},
 {id:'cloudNewSale',label:'تسجيل بيع جديد',ic:'＋'},
 {id:'cloudApprovals',label:'مركز الاعتمادات',ic:'✓'},
 {id:'cloudSales',label:'المبيعات والاعتمادات',ic:'◆'},
@@ -4815,20 +4831,28 @@ render=function(){
  }
  __legacyUnifiedRender();
 };
+
+function commandCenterDays(){const today=new Date(),rows=[];for(let i=6;i>=0;i--){const d=new Date(today);d.setDate(today.getDate()-i);rows.push({date:d.toISOString().slice(0,10),label:new Intl.DateTimeFormat('ar-SA',{weekday:'short'}).format(d),amount:0,diamonds:0});}return rows;}
+function buildCommandCenter(){
+ const c=window.DOT_CLOUD.state||{},all=(c.sales||[]).filter(x=>!x.requestType&&x.status!=='cancelled'),approved=all.filter(x=>x.status==='approved'),pending=all.filter(x=>x.status==='pending'),requests=(c.sales||[]).filter(x=>x.requestType&&x.status==='pending');
+ const today=new Date(),todayKey=today.toISOString().slice(0,10),monthKey=todayKey.slice(0,7),approvedToday=approved.filter(x=>String(x.saleDate||'').slice(0,10)===todayKey),approvedMonth=approved.filter(x=>String(x.saleDate||'').slice(0,7)===monthKey),historicalMonth=(getStoreSeries()||[]).filter(x=>String(x.date||'').slice(0,7)===monthKey);
+ const cloudRevenueToday=approvedToday.reduce((a,x)=>a+Number(x.amount||0),0),cloudDiamondsMonth=approvedMonth.reduce((a,x)=>a+Number(x.diamonds||0),0),histDiamondsMonth=historicalMonth.reduce((a,x)=>a+Number(x.diamondsSold||0),0),monthDiamonds=histDiamondsMonth+cloudDiamondsMonth,stock=Number(c.stats?.stockDiamonds||0),settings=loadS(DB.settings)||{},goal=Number(settings.monthlyDiamondGoal||settings.diamondGoal||3000000),goalPct=goal?Math.min(100,monthDiamonds/goal*100):0;
+ const dayOfMonth=today.getDate(),daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),expectedDiamonds=dayOfMonth?monthDiamonds/dayOfMonth*daysInMonth:0,remaining=Math.max(0,goal-monthDiamonds),remainingDays=Math.max(1,daysInMonth-dayOfMonth),neededDaily=remaining/remainingDays,avgDaily=dayOfMonth?monthDiamonds/dayOfMonth:0,stockDays=avgDaily>0?stock/avgDaily:null;
+ const storeProfit=(getStoreSeries()||[]).reduce((a,x)=>a+Number(x.netProfit||0),0),bcRows=loadT(DB.broadcast)||[],bcCommission=bcRows.map(computeBroadcaster).reduce((a,x)=>a+Number(x.commissionSAR||0),0),totalProfit=storeProfit+bcCommission;
+ const week=commandCenterDays(),weekMap=new Map(week.map(x=>[x.date,x]));approved.forEach(x=>{const k=String(x.saleDate||'').slice(0,10);if(weekMap.has(k)){const r=weekMap.get(k);r.amount+=Number(x.amount||0);r.diamonds+=Number(x.diamonds||0)}});(getStoreSeries()||[]).forEach(x=>{const k=String(x.date||'').slice(0,10);if(weekMap.has(k)){const r=weekMap.get(k);r.amount+=Number(x.salesIncl||0);r.diamonds+=Number(x.diamondsSold||0)}});const maxWeek=Math.max(1,...week.map(x=>x.diamonds));
+ const scoreBase=(goalPct>=100?45:goalPct*.45)+(stockDays===null?12:Math.min(25,stockDays/30*25))+(pending.length+requests.length===0?15:Math.max(0,15-(pending.length+requests.length)*3))+(monthDiamonds>0?15:5),score=Math.max(0,Math.min(100,Math.round(scoreBase))),health=score>=85?'ممتاز':score>=70?'جيد جدًا':score>=55?'جيد':'يحتاج متابعة',summary=[];
+ if(pending.length)summary.push({cls:'warn',text:`يوجد <strong>${cloudNum(pending.length)}</strong> عملية بيع جديدة بانتظار الاعتماد.`});else summary.push({cls:'',text:'لا توجد مبيعات جديدة معلّقة حاليًا.'});if(requests.length)summary.push({cls:'warn',text:`يوجد <strong>${cloudNum(requests.length)}</strong> طلب تعديل أو إلغاء يحتاج قرارك.`});if(goalPct>=100)summary.push({cls:'',text:`تم تجاوز هدف الشهر بنسبة <strong>${cloudNum(goalPct)}%</strong>.`});else summary.push({cls:neededDaily>avgDaily?'warn':'',text:`تحقق <strong>${cloudNum(goalPct)}%</strong> من الهدف، والمطلوب يوميًا ${cloudNum(Math.ceil(neededDaily))} ماسة.`});if(stockDays!==null)summary.push({cls:stockDays<7?'danger':stockDays<14?'warn':'',text:`المخزون الحالي يكفي تقريبًا <strong>${cloudNum(Math.floor(stockDays))} يومًا</strong> وفق متوسط البيع.`});else summary.push({cls:'warn',text:'لا توجد حركة كافية بعد لحساب مدة كفاية المخزون.'});summary.push({cls:'',text:`الربح الإجمالي الحالي <strong>${sar(totalProfit)} ر.س</strong>، منه ${sar(bcCommission)} ر.س ربح وكالة المذيعين.`});
+ return {pending,requests,cloudRevenueToday,monthDiamonds,stock,goalPct,expectedDiamonds,remaining,avgDaily,stockDays,storeProfit,bcCommission,totalProfit,week,maxWeek,score,health,summary};}
+function commandCenterHTML(){const x=buildCommandCenter();return `<section class="command-center"><div class="command-center-hero"><div class="command-center-title"><div><h2>غرفة القيادة</h2><p>ملخص تنفيذي لحالة المتجر ووكالة المذيعين وما يحتاج قرارك الآن.</p></div><div class="command-center-score"><strong>${x.score}/100</strong><span>أداء الوكالة · ${x.health}</span></div></div></div><div class="command-grid"><article class="command-card"><div class="command-card-head"><h3>الحالة المالية</h3><span class="command-card-icon">﷼</span></div><div class="command-metric"><span>صافي ربح المتجر</span><b class="${x.storeProfit>=0?'good':'warn'}">${sar(x.storeProfit)} ر.س</b></div><div class="command-metric"><span>ربح وكالة المذيعين</span><b class="gold">${sar(x.bcCommission)} ر.س</b></div><div class="command-metric"><span>الربح الإجمالي</span><b>${sar(x.totalProfit)} ر.س</b></div></article><article class="command-card"><div class="command-card-head"><h3>المبيعات والهدف</h3><span class="command-card-icon">◆</span></div><div class="command-metric"><span>مبيعات اليوم</span><b>${cloudMoney(x.cloudRevenueToday)}</b></div><div class="command-metric"><span>ألماس الشهر</span><b class="gold">${cloudNum(x.monthDiamonds)}</b></div><div class="command-progress"><i style="width:${Math.min(100,x.goalPct)}%"></i></div><div class="command-foot">تحقق ${cloudNum(x.goalPct)}% · المتوقع نهاية الشهر ${cloudNum(Math.round(x.expectedDiamonds))} ماسة</div></article><article class="command-card"><div class="command-card-head"><h3>المخزون</h3><span class="command-card-icon">◇</span></div><div class="command-metric"><span>المخزون الحالي</span><b class="gold">${cloudNum(x.stock)}</b></div><div class="command-metric"><span>متوسط البيع اليومي</span><b>${cloudNum(Math.round(x.avgDaily))}</b></div><div class="command-metric"><span>يكفي تقريبًا</span><b class="${x.stockDays!==null&&x.stockDays<7?'warn':'good'}">${x.stockDays===null?'—':cloudNum(Math.floor(x.stockDays))+' يوم'}</b></div></article><article class="command-card"><div class="command-card-head"><h3>ما يحتاج انتباهك</h3><span class="command-card-icon">!</span></div><div class="command-actions"><div class="command-action ${x.pending.length?'alert':''}"><span>مبيعات جديدة</span><b>${cloudNum(x.pending.length)}</b></div><div class="command-action ${x.requests.length?'alert':''}"><span>طلبات تعديل أو إلغاء</span><b>${cloudNum(x.requests.length)}</b></div><div class="command-action"><span>المتبقي من الهدف</span><b>${cloudNum(Math.round(x.remaining))}</b></div><button class="btn primary" id="command-open-approvals">فتح مركز الاعتمادات</button></div></article></div><div class="command-summary"><div class="command-summary-panel"><h3>ملخص المدير</h3><div class="command-summary-list">${x.summary.map(s=>`<div class="command-summary-item ${s.cls}"><i></i><p>${s.text}</p></div>`).join('')}</div></div><div class="command-summary-panel"><h3>حركة الألماس خلال 7 أيام</h3><div class="command-chart">${x.week.map(d=>`<div class="command-chart-col"><b>${cloudNum(d.diamonds)}</b><div class="command-chart-bar" style="height:${Math.max(4,d.diamonds/x.maxWeek*88)}px"></div><small>${d.label}</small></div>`).join('')}</div></div></div><div class="command-center-toggle"><button class="btn" id="command-toggle-details">إظهار التفاصيل التشغيلية</button></div></section>`;}
+
 const __ownerDashboardV25=renderDashboard;
 renderDashboard=function(main){
- __ownerDashboardV25(main);
- const c=window.DOT_CLOUD.state,sales=c.sales||[],pending=sales.filter(x=>x.status==='pending'),approved=sales.filter(x=>x.status==='approved');
- const cloudRevenue=approved.reduce((a,x)=>a+Number(x.amount||0),0), cloudDiamonds=approved.reduce((a,x)=>a+Number(x.diamonds||0),0);
- const storeSeries=getStoreSeries(), historicalProfit=storeSeries.reduce((a,x)=>a+Number(x.netProfit||0),0);
- const broadcasterProfit=(loadT(DB.broadcast)||[]).map(computeBroadcaster).reduce((a,x)=>a+Number(x.commissionSAR||0),0);
- const totalProfit=historicalProfit+broadcasterProfit;
- const insights=[];
- if(pending.length)insights.push(`يوجد ${cloudNum(pending.length)} عملية بانتظار اعتمادك.`);
- const avg=approved.length?cloudRevenue/approved.length:0;if(avg)insights.push(`متوسط قيمة العملية السحابية المعتمدة ${cloudMoney(avg)}.`);
- const stock=Number(c.stats?.stockDiamonds||0);if(stock<300000)insights.push('المخزون منخفض ويحتاج إلى دعم قريب.');else insights.push(`المخزون الحالي ${cloudNum(stock)} ماسة.`);
- const block=document.createElement('div');block.innerHTML=`<div class="cloud-assistant"><h3>مساعد الإدارة</h3><div class="cloud-insights">${insights.map(x=>`<div class="cloud-insight">${x}</div>`).join('')}</div></div>`;
- const first=main.querySelector('.page-head');first?.insertAdjacentElement('afterend',block);
+  __ownerDashboardV25(main);
+  const oldChildren=[...main.children],details=document.createElement('div');
+  details.id='command-details';details.style.display='none';oldChildren.forEach(el=>details.appendChild(el));
+  const shell=document.createElement('div');shell.innerHTML=commandCenterHTML();main.appendChild(shell.firstElementChild);main.appendChild(details);
+  document.getElementById('command-open-approvals')?.addEventListener('click',()=>{app.view='cloudApprovals';render()});
+  document.getElementById('command-toggle-details')?.addEventListener('click',e=>{const open=details.style.display==='none';details.style.display=open?'block':'none';e.currentTarget.textContent=open?'إخفاء التفاصيل التشغيلية':'إظهار التفاصيل التشغيلية';});
 };
 
 const supervisorPeriod={mode:'daily',value:new Date().toISOString().slice(0,10)};

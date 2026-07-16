@@ -1,7 +1,7 @@
 import { firebaseConfig, OWNER_EMAIL } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -105,12 +105,146 @@ function subscribe(){
     listeners.push(onSnapshot(query(collection(db,'users'),orderBy('createdAt','desc')),s=>{state.users=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
   }
 }
+
+
+const cleanSaleInput=d=>({
+  saleDate:String(d.saleDate||'').slice(0,10),
+  diamonds:Number(d.diamonds||0),
+  amount:Number(d.amount||0),
+  payment:String(d.payment||'المتجر'),
+  reference:String(d.reference||'').trim(),
+  notes:String(d.notes||'').trim()
+});
+const saleSnapshot=(id,s)=>({
+  id,
+  orderNumber:String(s.orderNumber||''),
+  saleDate:String(s.saleDate||'').slice(0,10),
+  diamonds:Number(s.diamonds||0),
+  amount:Number(s.amount||0),
+  payment:String(s.payment||''),
+  reference:String(s.reference||''),
+  notes:String(s.notes||''),
+  status:String(s.status||'pending'),
+  createdBy:String(s.createdBy||''),
+  createdByName:String(s.createdByName||''),
+  createdByEmail:String(s.createdByEmail||'')
+});
+const appendAudit=(sale,entry)=>{
+  const current=Array.isArray(sale.auditTrail)?sale.auditTrail:[];
+  return [...current.slice(-24),entry];
+};
+const actorInfo=()=>({
+  uid:state.user?.uid||'',
+  email:state.user?.email||'',
+  name:state.profile?.name||state.user?.displayName||state.user?.email||'',
+  role:state.profile?.role||''
+});
+async function submitChangeRequest(targetSale,requestType,proposedSale=null){
+  const actor=actorInfo();
+  const request={
+    requestType,
+    targetSaleId:targetSale.id,
+    targetOrderNumber:targetSale.orderNumber||'',
+    targetSnapshot:saleSnapshot(targetSale.id,targetSale),
+    proposedSale:requestType==='edit'?cleanSaleInput(proposedSale):null,
+    saleDate:new Date().toISOString().slice(0,10),
+    diamonds:0,
+    amount:0,
+    payment:'طلب تعديل',
+    reference:targetSale.orderNumber||'',
+    notes:requestType==='edit'?'طلب تعديل عملية':'طلب إلغاء عملية',
+    status:'pending',
+    createdBy:state.user.uid,
+    createdByName:actor.name,
+    createdByEmail:actor.email,
+    createdAt:serverTimestamp(),
+    updatedAt:serverTimestamp()
+  };
+  return addDoc(collection(db,'sales'),request);
+}
+async function updateSaleRecord(id,changes){
+  const next=cleanSaleInput(changes);
+  if(!next.saleDate)throw new Error('تاريخ العملية مطلوب.');
+  if(next.diamonds<=0)throw new Error('كمية الألماس يجب أن تكون أكبر من صفر.');
+  if(next.amount<0)throw new Error('قيمة البيع غير صحيحة.');
+  const target=state.sales.find(x=>String(x.id)===String(id));
+  if(!target)throw new Error('العملية غير موجودة.');
+  if(state.profile?.role!=='owner'){
+    if(target.createdBy!==state.user?.uid)throw new Error('لا يمكنك تعديل عملية ليست لك.');
+    if(target.status!=='pending')throw new Error('يمكن طلب تعديل العملية المعلّقة فقط.');
+    await submitChangeRequest(target,'edit',next);
+    return {requestSubmitted:true};
+  }
+  return runTransaction(db,async tx=>{
+    const sref=doc(db,'sales',id),stref=doc(db,'publicStats','current');
+    const ss=await tx.get(sref);
+    if(!ss.exists())throw new Error('العملية غير موجودة.');
+    const old=ss.data();
+    if(old.requestType)throw new Error('لا يمكن تعديل طلب تغيير كعملية بيع.');
+    const patch={...next,updatedAt:serverTimestamp(),lastEditedBy:state.user.uid,lastEditedByEmail:state.user.email};
+    const auditEntry={action:'updated',at:new Date().toISOString(),actor:actorInfo(),before:saleSnapshot(id,old),after:{...saleSnapshot(id,{...old,...next}),status:old.status}};
+    patch.auditTrail=appendAudit(old,auditEntry);
+    if(old.status==='approved'){
+      const st=await tx.get(stref),data=st.data()||{};
+      const cur=Number(data.stockDiamonds||0);
+      const restored=cur+Number(old.diamonds||0);
+      const newStock=restored-next.diamonds;
+      if(newStock<0)throw new Error('المخزون غير كافٍ بعد التعديل.');
+      const updatedSale={id,...old,...patch,status:'approved'};
+      const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
+      const approvedSales=[approvedSummary(updatedSale),...current.filter(x=>String(x.id)!==String(id))].slice(0,500);
+      tx.set(stref,{stockDiamonds:newStock,approvedSales,lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+    }
+    tx.update(sref,patch);
+  });
+}
+async function cancelSaleRecord(id){
+  const target=state.sales.find(x=>String(x.id)===String(id));
+  if(!target)throw new Error('العملية غير موجودة.');
+  if(state.profile?.role!=='owner'){
+    if(target.createdBy!==state.user?.uid)throw new Error('لا يمكنك إلغاء عملية ليست لك.');
+    if(target.status!=='pending')throw new Error('يمكن طلب إلغاء العملية المعلّقة فقط.');
+    await submitChangeRequest(target,'cancel');
+    return {requestSubmitted:true};
+  }
+  return runTransaction(db,async tx=>{
+    const sref=doc(db,'sales',id),stref=doc(db,'publicStats','current');
+    const ss=await tx.get(sref);
+    if(!ss.exists())throw new Error('العملية غير موجودة.');
+    const sale=ss.data();
+    if(sale.requestType)throw new Error('لا يمكن إلغاء طلب تغيير بهذه الطريقة.');
+    if(sale.status==='cancelled')return;
+    const patch={
+      status:'cancelled',
+      cancelledAt:serverTimestamp(),
+      cancelledBy:state.user.uid,
+      cancelledByEmail:state.user.email,
+      updatedAt:serverTimestamp(),
+      auditTrail:appendAudit(sale,{action:'cancelled',at:new Date().toISOString(),actor:actorInfo(),before:saleSnapshot(id,sale)})
+    };
+    if(sale.status==='approved'){
+      const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0);
+      const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
+      tx.set(stref,{
+        stockDiamonds:cur+Number(sale.diamonds||0),
+        approvedSales:current.filter(x=>String(x.id)!==String(id)),
+        lastUpdatedAt:serverTimestamp(),
+        approvedSalesUpdatedAt:serverTimestamp()
+      },{merge:true});
+    }
+    tx.update(sref,patch);
+  });
+}
+
 const api={
   state,
   role:()=>state.profile?.role||'loading',
-  mine:()=>state.profile?.role==='owner'?state.sales:state.sales.filter(x=>x.status==='approved'||x.createdBy===state.user?.uid),
+  mine:()=>{const regular=state.sales.filter(x=>!x.requestType);return state.profile?.role==='owner'?regular:regular.filter(x=>x.status==='approved'||x.createdBy===state.user?.uid)},
+  changeRequests:()=>state.sales.filter(x=>x.requestType),
   logout:()=>signOut(auth),
   addSale:async d=>addDoc(collection(db,'sales'),{...d,status:'pending',createdBy:state.user.uid,createdByName:(state.profile.name&&!String(state.profile.name).includes('@')?state.profile.name:(state.user.displayName||String(state.user.email||'').split('@')[0])),createdByEmail:state.user.email,createdAt:serverTimestamp(),updatedAt:serverTimestamp()}),
+  updateSale:updateSaleRecord,
+  cancelSale:cancelSaleRecord,
   addPurchase:async d=>runTransaction(db,async tx=>{const sref=doc(db,'publicStats','current'),pref=doc(collection(db,'purchases')),ss=await tx.get(sref),cur=Number(ss.data()?.stockDiamonds||0);tx.set(pref,{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()});tx.set(sref,{stockDiamonds:cur+Number(d.diamonds||0),lastUpdatedAt:serverTimestamp()},{merge:true});}),
   addExpense:async d=>addDoc(collection(db,'expenses'),{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()}),
   decide:async(id,status)=>runTransaction(db,async tx=>{
@@ -118,6 +252,45 @@ const api={
     if(!ss.exists())throw new Error('العملية غير موجودة');
     const sale=ss.data();
     if(sale.status!=='pending')return;
+    if(sale.requestType){
+      const requestPatch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp()};
+      if(status==='approved'){
+        const targetRef=doc(db,'sales',sale.targetSaleId),targetSnap=await tx.get(targetRef);
+        if(!targetSnap.exists())throw new Error('العملية الأصلية غير موجودة.');
+        const target=targetSnap.data();
+        if(sale.requestType==='edit'){
+          const next=cleanSaleInput(sale.proposedSale||{});
+          if(!next.saleDate||next.diamonds<=0)throw new Error('بيانات التعديل غير صحيحة.');
+          const targetPatch={...next,updatedAt:serverTimestamp(),lastEditedBy:state.user.uid,lastEditedByEmail:state.user.email};
+          targetPatch.auditTrail=appendAudit(target,{action:'edit_request_approved',at:new Date().toISOString(),actor:actorInfo(),requestId:id,before:saleSnapshot(sale.targetSaleId,target),after:{...saleSnapshot(sale.targetSaleId,{...target,...next}),status:target.status}});
+          if(target.status==='approved'){
+            const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0);
+            const newStock=cur+Number(target.diamonds||0)-Number(next.diamonds||0);
+            if(newStock<0)throw new Error('المخزون غير كافٍ بعد التعديل.');
+            const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
+            const approvedSales=[approvedSummary({id:sale.targetSaleId,...target,...targetPatch,status:'approved'}),...current.filter(x=>String(x.id)!==String(sale.targetSaleId))].slice(0,500);
+            tx.set(stref,{stockDiamonds:newStock,approvedSales,lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+          }
+          tx.update(targetRef,targetPatch);
+        }else if(sale.requestType==='cancel'){
+          if(target.status==='approved'){
+            const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0);
+            const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
+            tx.set(stref,{stockDiamonds:cur+Number(target.diamonds||0),approvedSales:current.filter(x=>String(x.id)!==String(sale.targetSaleId)),lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+          }
+          tx.update(targetRef,{
+            status:'cancelled',
+            cancelledAt:serverTimestamp(),
+            cancelledBy:state.user.uid,
+            cancelledByEmail:state.user.email,
+            updatedAt:serverTimestamp(),
+            auditTrail:appendAudit(target,{action:'cancel_request_approved',at:new Date().toISOString(),actor:actorInfo(),requestId:id,before:saleSnapshot(sale.targetSaleId,target)})
+          });
+        }
+      }
+      tx.update(sref,requestPatch);
+      return;
+    }
     const patch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp()};
     if(status==='approved'){
       const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0),qty=Number(sale.diamonds||0);
@@ -140,4 +313,4 @@ onAuthStateChanged(auth,async user=>{
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
   state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.8.0').catch(console.warn)}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.11.0').catch(console.warn)}

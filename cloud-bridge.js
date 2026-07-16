@@ -18,7 +18,13 @@ async function ensureProfile(user){
     await setDoc(ref,p); return p;
   }
   let p=snap.data();
-  if(owner&&(p.role!=='owner'||p.status!=='active')){await updateDoc(ref,{role:'owner',status:'active'});p={...p,role:'owner',status:'active'};}
+  const authName=String(user.displayName||'').trim();
+  const storedName=String(p.name||'').trim();
+  const needsNameSync=authName && (!storedName || storedName===user.email || storedName.includes('@'));
+  const patch={};
+  if(owner&&(p.role!=='owner'||p.status!=='active')){patch.role='owner';patch.status='active';}
+  if(needsNameSync)patch.name=authName;
+  if(Object.keys(patch).length){await updateDoc(ref,{...patch,updatedAt:serverTimestamp()});p={...p,...patch};}
   return p;
 }
 function subscribe(){
@@ -36,11 +42,12 @@ const api={
   role:()=>state.profile?.role||'loading',
   mine:()=>state.profile?.role==='owner'?state.sales:state.sales.filter(x=>x.createdBy===state.user?.uid),
   logout:()=>signOut(auth),
-  addSale:async d=>addDoc(collection(db,'sales'),{...d,status:'pending',createdBy:state.user.uid,createdByName:state.profile.name||state.user.email,createdByEmail:state.user.email,createdAt:serverTimestamp(),updatedAt:serverTimestamp()}),
+  addSale:async d=>addDoc(collection(db,'sales'),{...d,status:'pending',createdBy:state.user.uid,createdByName:(state.profile.name&&!String(state.profile.name).includes('@')?state.profile.name:(state.user.displayName||String(state.user.email||'').split('@')[0])),createdByEmail:state.user.email,createdAt:serverTimestamp(),updatedAt:serverTimestamp()}),
   addPurchase:async d=>runTransaction(db,async tx=>{const sref=doc(db,'publicStats','current'),pref=doc(collection(db,'purchases')),ss=await tx.get(sref),cur=Number(ss.data()?.stockDiamonds||0);tx.set(pref,{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()});tx.set(sref,{stockDiamonds:cur+Number(d.diamonds||0),lastUpdatedAt:serverTimestamp()},{merge:true});}),
   addExpense:async d=>addDoc(collection(db,'expenses'),{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()}),
   decide:async(id,status)=>runTransaction(db,async tx=>{const sref=doc(db,'sales',id),stref=doc(db,'publicStats','current'),ss=await tx.get(sref);if(!ss.exists())throw new Error('العملية غير موجودة');const sale=ss.data();if(sale.status!=='pending')return;const patch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp()};if(status==='approved'){const st=await tx.get(stref),cur=Number(st.data()?.stockDiamonds||0),qty=Number(sale.diamonds||0);if(cur<qty)throw new Error('المخزون غير كافٍ');tx.set(stref,{stockDiamonds:cur-qty,lastUpdatedAt:serverTimestamp()},{merge:true});patch.stockDeducted=qty;}tx.update(sref,patch);}),
-  setUserStatus:(uid,status)=>updateDoc(doc(db,'users',uid),{status,updatedAt:serverTimestamp()})
+  setUserStatus:(uid,status)=>updateDoc(doc(db,'users',uid),{status,updatedAt:serverTimestamp()}),
+  setUserName:(uid,name)=>updateDoc(doc(db,'users',uid),{name:String(name||'').trim(),updatedAt:serverTimestamp()})
 };
 window.DOT_CLOUD=api;
 onAuthStateChanged(auth,async user=>{
@@ -49,4 +56,4 @@ onAuthStateChanged(auth,async user=>{
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
   state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.1.0').catch(console.warn)}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.5.0').catch(console.warn)}

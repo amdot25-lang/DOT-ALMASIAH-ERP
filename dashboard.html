@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOT ALMASIAH · v21 Tax & Broadcaster Names</title>
+<meta name="dot-build" content="27.2"><title>DOT ALMASIAH · v21 Tax & Broadcaster Names</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -946,7 +946,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=27.1.0"></script>
+<script type="module" src="./cloud-bridge.js?v=27.2.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -4811,7 +4811,6 @@ const CLOUD_OWNER_NAV=[
 {id:'broadcasters',label:'وكالة المذيعين',ic:'◐'},
 {id:'import',label:'استيراد رواتب المذيعين',ic:'⇩'},
 {id:'tax',label:'الضريبة المضافة',ic:'٪'},
-{id:'reports',label:'التقارير',ic:'▦'},
 {id:'cloudUsers',label:'المشرفون والصلاحيات',ic:'♙'},
 {id:'cloudActivity',label:'سجل النشاط',ic:'◉'},
 {id:'cloudPerformance',label:'لوحة الأداء',ic:'▤'},
@@ -5354,8 +5353,8 @@ document.getElementById('account-logout')?.addEventListener('click',()=>{
   window.DOT_CLOUD?.logout();
 });
 
-window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';updateAccountMenu();updateSyncStatus();app.view=role==='owner'?'dashboard':'supervisorHome';render()});
-window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();updateSyncStatus();if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity','cloudPerformance','executiveCenter'].includes(app.view))render()});
+window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';updateAccountMenu();updateSyncStatus();try{sessionStorage.removeItem('dot_last_view');localStorage.removeItem('dot_last_view')}catch(_){}app.view=role==='owner'?'dashboard':'supervisorHome';render()});
+window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();updateSyncStatus();if(cloudReady()&&['dashboard','store','supervisorHome','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity','cloudPerformance','executiveCenter'].includes(app.view))render()});
 document.getElementById('cloud-logout')?.addEventListener('click',()=>window.DOT_CLOUD?.logout());
 
 document.getElementById('global-search-btn')?.addEventListener('click',openGlobalSearch);

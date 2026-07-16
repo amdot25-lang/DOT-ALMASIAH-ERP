@@ -708,11 +708,112 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 @media(max-width:900px){.cloud-users-table{display:none}.cloud-user-cards{display:grid}}
 @media(max-width:900px){.mobile-menu-btn{display:block}.sidebar{display:flex!important;position:fixed!important;right:0;top:0;bottom:0;height:100vh!important;z-index:1100;transform:translateX(105%);transition:.25s;width:min(82vw,300px)!important}.sidebar.mobile-open{transform:translateX(0)}.mobile-overlay.show{display:block}.cloud-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.cloud-desktop-table{display:none}.cloud-mobile-cards{display:grid;gap:10px}.stock-hero{grid-template-columns:1fr}.page-head{padding-top:48px}.cloud-kpi b{font-size:20px}}
 @media(max-width:520px){.cloud-kpis{grid-template-columns:1fr 1fr}.cloud-record-meta{grid-template-columns:1fr}.cloud-form-actions{align-items:stretch;flex-direction:column}.cloud-form-actions .btn{width:100%;justify-content:center}}
+
+<style id="v25-9-account-menu-style">
+.account-menu-wrap{
+  position:fixed;
+  top:12px;
+  left:16px;
+  z-index:1300;
+  direction:rtl;
+}
+.account-menu-btn{
+  min-width:168px;
+  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:7px 11px;
+  border-radius:14px;
+  border:1px solid rgba(201,162,75,.42);
+  background:rgba(18,18,20,.96);
+  color:var(--text);
+  box-shadow:0 10px 26px rgba(0,0,0,.30);
+  cursor:pointer;
+  backdrop-filter:blur(14px);
+}
+.account-menu-btn:hover{border-color:var(--gold)}
+.account-user-icon{
+  width:31px;height:31px;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,#2a2417,#17130d);
+  border:1px solid var(--gold-dim);
+  color:var(--gold-bright);
+  font-size:15px;
+  flex:0 0 auto;
+}
+.account-user-text{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;min-width:0;flex:1}
+.account-user-text strong{font-size:12px;color:#fff;max-width:112px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.account-user-text small{font-size:9px;color:var(--gold-bright)}
+.account-chevron{font-size:11px;color:var(--text-dim);transition:.2s}
+.account-menu-wrap.open .account-chevron{transform:rotate(180deg)}
+.account-dropdown{
+  display:none;
+  position:absolute;
+  top:54px;
+  left:0;
+  width:220px;
+  background:#121214;
+  border:1px solid var(--border-light);
+  border-radius:14px;
+  padding:8px;
+  box-shadow:0 18px 42px rgba(0,0,0,.45);
+}
+.account-menu-wrap.open .account-dropdown{display:block}
+.account-dropdown-head{padding:10px 11px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.account-dropdown-head strong{display:block;color:#fff;font-size:13px}
+.account-dropdown-head small{display:block;color:var(--text-dim);font-size:9px;direction:ltr;text-align:right;margin-top:3px}
+.account-dropdown button{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#f3d5d5;
+  padding:11px 12px;
+  border-radius:10px;
+  text-align:right;
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12px;
+}
+.account-dropdown button:hover{background:rgba(220,75,75,.12);color:#fff}
+.sidebar-foot .logout-btn{display:none!important}
+@media(max-width:900px){
+  .account-menu-wrap{top:12px;left:10px}
+  .account-menu-btn{min-width:142px;height:44px;padding:6px 9px}
+  .account-user-text strong{max-width:86px;font-size:11px}
+  .account-dropdown{width:205px}
+  .page-head{padding-left:0!important}
+}
+@media(max-width:420px){
+  .account-menu-btn{min-width:126px}
+  .account-user-icon{width:28px;height:28px}
+  .account-user-text strong{max-width:72px}
+}
+</style>
 </style>
 </head>
 <body>
 <div id="cloud-loading" class="cloud-loading">جاري تجهيز لوحة DOT ALMASIAH…</div>
-<button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="القائمة">☰</button><div id="mobile-overlay" class="mobile-overlay"></div>
+<button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="القائمة">☰</button>
+<div id="account-menu-wrap" class="account-menu-wrap">
+  <button id="account-menu-btn" class="account-menu-btn" type="button" aria-label="قائمة الحساب" aria-expanded="false">
+    <span class="account-user-icon">👤</span>
+    <span class="account-user-text">
+      <strong id="account-display-name">جاري التحقق…</strong>
+      <small id="account-display-role">الحساب</small>
+    </span>
+    <span class="account-chevron">⌄</span>
+  </button>
+  <div class="account-dropdown" id="account-dropdown">
+    <div class="account-dropdown-head">
+      <strong id="account-dropdown-name">—</strong>
+      <small id="account-dropdown-email">—</small>
+    </div>
+    <button id="account-logout" type="button">🚪 تسجيل الخروج</button>
+  </div>
+</div>
+<div id="mobile-overlay" class="mobile-overlay"></div>
 <div id="app">
   <aside class="sidebar">
     <div class="brand">
@@ -721,13 +822,13 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
       <p>نسخة v21 Tax & Names</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
-    <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout">تسجيل الخروج</button></div>
+    <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
   </aside>
   <main id="main"></main>
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=25.5.0"></script>
+<script type="module" src="./cloud-bridge.js?v=25.9.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -4731,8 +4832,43 @@ function renderCloudUsers(main){
  document.querySelectorAll('[data-user-status]').forEach(b=>b.onclick=async()=>{const msg=document.getElementById('cloud-user-msg'),old=b.textContent;b.disabled=true;b.textContent='جاري الحفظ…';try{await window.DOT_CLOUD.setUserStatus(b.dataset.userStatus,b.dataset.next);msg.textContent=b.dataset.next==='active'?'تم تفعيل حساب المشرف.':'تم إيقاف حساب المشرف.';}catch(e){msg.textContent=e.message||e;b.disabled=false;b.textContent=old;}})
  document.querySelectorAll('[data-user-name]').forEach(b=>b.onclick=async()=>{const msg=document.getElementById('cloud-user-msg'),name=prompt('اكتب اسم المستخدم الذي سيظهر في الترحيب والتقارير:',b.dataset.currentName||'');if(name===null)return;if(!name.trim()){msg.textContent='الاسم لا يمكن أن يكون فارغًا.';return}try{await window.DOT_CLOUD.setUserName(b.dataset.userName,name.trim());msg.textContent='تم تحديث الاسم.';}catch(e){msg.textContent=e.message||e}})
 }
-window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';app.view=role==='owner'?'dashboard':'supervisorHome';render()});
-window.addEventListener('dot-cloud-update',()=>{if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers'].includes(app.view))render()});
+
+function updateAccountMenu(){
+  const cloud=window.DOT_CLOUD;
+  if(!cloud?.state?.profile)return;
+  const p=cloud.state.profile||{},u=cloud.state.user||{};
+  const name=(p.name||u.displayName||u.email||'المستخدم').trim();
+  const role=p.role==='owner'?'المالك':'المشرف';
+  const email=u.email||p.email||'';
+  const nameEl=document.getElementById('account-display-name');
+  const roleEl=document.getElementById('account-display-role');
+  const dropName=document.getElementById('account-dropdown-name');
+  const dropEmail=document.getElementById('account-dropdown-email');
+  if(nameEl)nameEl.textContent=name;
+  if(roleEl)roleEl.textContent=role;
+  if(dropName)dropName.textContent=`${name} · ${role}`;
+  if(dropEmail)dropEmail.textContent=email;
+}
+const accountWrap=document.getElementById('account-menu-wrap');
+const accountBtn=document.getElementById('account-menu-btn');
+accountBtn?.addEventListener('click',e=>{
+  e.stopPropagation();
+  const open=accountWrap?.classList.toggle('open');
+  accountBtn.setAttribute('aria-expanded',open?'true':'false');
+});
+document.addEventListener('click',e=>{
+  if(accountWrap&&!accountWrap.contains(e.target)){
+    accountWrap.classList.remove('open');
+    accountBtn?.setAttribute('aria-expanded','false');
+  }
+});
+document.getElementById('account-logout')?.addEventListener('click',()=>{
+  accountWrap?.classList.remove('open');
+  window.DOT_CLOUD?.logout();
+});
+
+window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';updateAccountMenu();app.view=role==='owner'?'dashboard':'supervisorHome';render()});
+window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers'].includes(app.view))render()});
 document.getElementById('cloud-logout')?.addEventListener('click',()=>window.DOT_CLOUD?.logout());
 document.getElementById('mobile-menu-btn')?.addEventListener('click',()=>{document.querySelector('.sidebar')?.classList.toggle('mobile-open');document.getElementById('mobile-overlay')?.classList.toggle('show')});
 document.getElementById('mobile-overlay')?.addEventListener('click',closeMobileNav);

@@ -811,6 +811,46 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 .sale-edit-actions{display:flex;gap:10px;justify-content:flex-start;margin-top:16px}
 @media(max-width:600px){.sale-edit-card{padding:15px;border-radius:16px}.sale-edit-actions .btn{flex:1}}
 </style>
+
+<style id="v25-12-daily-ops-style">
+.sync-status-pill{
+  position:fixed;top:66px;left:16px;z-index:1290;
+  display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;
+  border:1px solid var(--border-light);background:rgba(18,18,20,.94);
+  color:var(--text-dim);font-size:9px;box-shadow:0 8px 22px rgba(0,0,0,.22);
+  backdrop-filter:blur(12px)
+}
+.sync-status-pill i{width:7px;height:7px;border-radius:50%;background:#6fdf9c;box-shadow:0 0 0 3px rgba(111,223,156,.10)}
+.sync-status-pill.offline i{background:#e05e5e;box-shadow:0 0 0 3px rgba(224,94,94,.10)}
+.sync-status-pill.syncing i{background:var(--gold-bright);animation:syncPulse 1s infinite}
+@keyframes syncPulse{50%{opacity:.35}}
+.quick-sale-fab{
+  display:none;position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));
+  z-index:1250;border:1px solid rgba(255,214,116,.6);
+  background:linear-gradient(135deg,#d6ac4e,#9d7324);color:#090909;
+  border-radius:999px;padding:13px 18px;font-family:inherit;font-weight:800;
+  box-shadow:0 15px 34px rgba(0,0,0,.42);cursor:pointer
+}
+.quick-sale-fab.hidden{display:none!important}
+.approval-grid,.activity-list,.notification-list{display:grid;gap:10px}
+.approval-card,.activity-item,.notification-item{
+  border:1px solid var(--border);background:rgba(255,255,255,.018);
+  border-radius:15px;padding:14px
+}
+.approval-card-head,.activity-item-head,.notification-item-head{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px
+}
+.approval-card h4,.activity-item h4,.notification-item h4{margin:0;color:#fff;font-size:13px}
+.activity-item p,.notification-item p{margin:6px 0 0;color:var(--text-dim);font-size:10px;line-height:1.8}
+.activity-time{direction:ltr;color:var(--text-faint);font-size:9px;white-space:nowrap}
+.reject-reason{margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(220,75,75,.09);color:#f0b7b7;font-size:10px}
+.approval-empty{padding:24px;text-align:center;color:var(--text-dim)}
+@media(max-width:900px){
+  .quick-sale-fab{display:flex;align-items:center;gap:8px}
+  main{padding-bottom:110px!important}
+  .sync-status-pill{left:10px;top:62px}
+}
+</style>
 </style>
 </head>
 <body>
@@ -849,6 +889,8 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
     <div id="sale-edit-msg" class="cloud-msg mt"></div>
   </div>
 </div>
+<div id="sync-status-pill" class="sync-status-pill"><i></i><span id="sync-status-text">جاري الاتصال…</span></div>
+<button id="quick-sale-fab" class="quick-sale-fab" type="button">＋ تسجيل مبيعة</button>
 <div id="mobile-overlay" class="mobile-overlay"></div>
 <div id="app">
   <aside class="sidebar">
@@ -864,7 +906,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=25.11.0"></script>
+<script type="module" src="./cloud-bridge.js?v=25.12.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -4708,6 +4750,7 @@ render=function(){
 const CLOUD_OWNER_NAV=[
 {id:'dashboard',label:'لوحة التحكم',ic:'◈'},
 {id:'cloudNewSale',label:'تسجيل بيع جديد',ic:'＋'},
+{id:'cloudApprovals',label:'مركز الاعتمادات',ic:'✓'},
 {id:'cloudSales',label:'المبيعات والاعتمادات',ic:'◆'},
 {id:'cloudPurchases',label:'المشتريات والمخزون',ic:'▣'},
 {id:'cloudStock',label:'حركة المخزون',ic:'◇'},
@@ -4717,6 +4760,7 @@ const CLOUD_OWNER_NAV=[
 {id:'tax',label:'الضريبة المضافة',ic:'٪'},
 {id:'reports',label:'التقارير',ic:'▦'},
 {id:'cloudUsers',label:'المشرفون والصلاحيات',ic:'♙'},
+{id:'cloudActivity',label:'سجل النشاط',ic:'◉'},
 {id:'admin',label:'الإدارة والأمان',ic:'⚙'},
 {id:'integrity',label:'فحص سلامة البيانات',ic:'✓'},
 {id:'backup',label:'النسخ الاحتياطي',ic:'⟲'}];
@@ -4761,11 +4805,12 @@ const __legacyUnifiedRender=render;
 render=function(){
  if(!cloudReady()){renderNav();return;}
  const role=cloudRole();
- const ownerOnly=['dashboard','store','broadcasters','import','tax','reports','admin','integrity','backup','cloudPurchases','cloudExpenses','cloudUsers'];
+ const ownerOnly=['dashboard','store','broadcasters','import','tax','reports','admin','integrity','backup','cloudPurchases','cloudExpenses','cloudUsers','cloudApprovals','cloudActivity'];
  if(role!=='owner'&&ownerOnly.includes(app.view))app.view='supervisorHome';
- if(['supervisorHome','cloudNewSale','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers'].includes(app.view)){
+ document.body.dataset.erpView=app.view;updateQuickSaleButton();
+  if(['supervisorHome','cloudNewSale','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity'].includes(app.view)){
    renderNav();const main=document.getElementById('main');main.innerHTML='';
-   const map={supervisorHome:renderSupervisorHome,cloudNewSale:renderCloudNewSale,cloudSales:renderCloudSales,cloudPurchases:renderCloudPurchases,cloudStock:renderCloudStock,cloudExpenses:renderCloudExpenses,cloudUsers:renderCloudUsers};
+   const map={supervisorHome:renderSupervisorHome,cloudNewSale:renderCloudNewSale,cloudApprovals:renderCloudApprovals,cloudSales:renderCloudSales,cloudPurchases:renderCloudPurchases,cloudStock:renderCloudStock,cloudExpenses:renderCloudExpenses,cloudUsers:renderCloudUsers,cloudActivity:renderCloudActivity};
    map[app.view](main);return;
  }
  __legacyUnifiedRender();
@@ -4822,6 +4867,7 @@ function renderSupervisorHome(main){
  const salesValue=approved.reduce((a,x)=>a+Number(x.amount||0),0), diamonds=approved.reduce((a,x)=>a+Number(x.diamonds||0),0);
  main.innerHTML=`<div class="page-head"><div><h2>لوحة المشرف</h2><div class="sub">واجهة تشغيل سريعة وآمنة لتسجيل المبيعات ومتابعتها.</div></div><span class="role-badge">مشرف مبيعات</span></div>
  <div class="supervisor-welcome"><h2>مرحبًا ${supervisorDisplayName()}</h2><div class="small mt">يمكنك تسجيل المبيعات ومشاهدة السجل التاريخي والمبيعات المعتمدة والمخزون المتاح.</div></div>
+ ${supervisorNotificationsHTML()}
  ${supervisorFilterHTML()}
  <div class="cloud-kpis">
    <div class="cloud-kpi"><span>قيمة المبيعات</span><b class="supervisor-kpi-period">${cloudMoney(salesValue)}</b><small>${range.label}</small></div>
@@ -4864,7 +4910,7 @@ function saleActionsHTML(x,includeApproval){
 function cloudSalesContent(rows,actions=true){
  if(!rows.length)return '<div class="empty">لا توجد عمليات حتى الآن.</div>';
  return `<div class="table-wrap cloud-desktop-table"><table><thead><tr><th>رقم العملية</th><th>التاريخ</th><th>الألماس</th><th>المبلغ</th><th>الدفع</th><th>المشرف</th><th>الحالة</th><th>الإجراء</th></tr></thead><tbody>${rows.map(x=>`<tr><td style="font-size:10px;color:var(--text-faint)">${x.orderNumber||'—'}</td><td>${cloudDate(x.saleDate)}</td><td>${cloudNum(x.diamonds)}</td><td>${cloudMoney(x.amount)}</td><td>${x.payment||'—'}</td><td>${x.historical?'سجل تاريخي':(x.createdByName||x.createdByEmail||'—')}</td><td><span class="cloud-status ${x.status}">${x.historical?'تاريخي · معتمد':cloudStatus(x.status)}</span></td><td>${saleActionsHTML(x,actions)}</td></tr>`).join('')}</tbody></table></div>
- <div class="cloud-mobile-cards">${rows.map(x=>`<div class="cloud-record"><div class="cloud-record-head"><span class="cloud-status ${x.status}">${x.historical?'تاريخي · معتمد':cloudStatus(x.status)}</span><small style="direction:ltr;color:var(--text-faint)">#${String(x.orderNumber||x.id).slice(-6)}</small></div><div class="cloud-record-value">${cloudNum(x.diamonds)} ماسة</div><div style="font-size:18px;direction:ltr">${cloudMoney(x.amount)}</div><div class="cloud-record-meta mt"><span>التاريخ: ${cloudDate(x.saleDate)}</span><span>الدفع: ${x.payment||'—'}</span><span>${x.historical?'المصدر: سجل تاريخي':'المشرف: '+(x.createdByName||'—')}</span></div>${saleActionsHTML(x,actions)}</div>`).join('')}</div>`;
+ <div class="cloud-mobile-cards">${rows.map(x=>`<div class="cloud-record"><div class="cloud-record-head"><span class="cloud-status ${x.status}">${x.historical?'تاريخي · معتمد':cloudStatus(x.status)}</span><small style="direction:ltr;color:var(--text-faint)">#${String(x.orderNumber||x.id).slice(-6)}</small></div><div class="cloud-record-value">${cloudNum(x.diamonds)} ماسة</div><div style="font-size:18px;direction:ltr">${cloudMoney(x.amount)}</div><div class="cloud-record-meta mt"><span>التاريخ: ${cloudDate(x.saleDate)}</span><span>الدفع: ${x.payment||'—'}</span><span>${x.historical?'المصدر: سجل تاريخي':'المشرف: '+(x.createdByName||'—')}</span></div>${x.status==='rejected'&&x.rejectionReason?`<div class="reject-reason">سبب الرفض: ${x.rejectionReason}</div>`:''}${saleActionsHTML(x,actions)}</div>`).join('')}</div>`;
 }
 function findCloudSale(id){return (window.DOT_CLOUD.state.sales||[]).find(x=>String(x.id)===String(id))}
 function openSaleEdit(id){
@@ -4886,7 +4932,12 @@ function closeSaleEdit(){
 }
 function bindCloudDecisions(){
  document.querySelectorAll('[data-approve]').forEach(b=>b.onclick=async()=>{try{await window.DOT_CLOUD.decide(b.dataset.approve,'approved')}catch(e){alert(e.message||e)}});
- document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{try{await window.DOT_CLOUD.decide(b.dataset.reject,'rejected')}catch(e){alert(e.message||e)}});
+ document.querySelectorAll('[data-reject]').forEach(b=>b.onclick=async()=>{
+   const reason=prompt('اكتب سبب الرفض ليظهر للمشرفة:','');
+   if(reason===null)return;
+   if(!String(reason).trim()){alert('سبب الرفض مطلوب.');return;}
+   try{await window.DOT_CLOUD.decide(b.dataset.reject,'rejected',String(reason).trim())}catch(e){alert(e.message||e)}
+ });
  document.querySelectorAll('[data-sale-edit]').forEach(b=>b.onclick=()=>openSaleEdit(b.dataset.saleEdit));
  document.querySelectorAll('[data-sale-cancel]').forEach(b=>b.onclick=async()=>{
    const x=findCloudSale(b.dataset.saleCancel);if(!x)return;
@@ -4908,6 +4959,59 @@ function changeRequestCards(){
    const details=r.requestType==='edit'?`<div class="cloud-record-meta mt"><span>الألماس: ${cloudNum(t.diamonds)} ← ${cloudNum(p.diamonds)}</span><span>القيمة: ${cloudMoney(t.amount)} ← ${cloudMoney(p.amount)}</span><span>التاريخ: ${cloudDate(t.saleDate)} ← ${cloudDate(p.saleDate)}</span></div>`:`<div class="small mt">طلب إلغاء العملية وإعادة المخزون عند الاعتماد.</div>`;
    return `<div class="cloud-record"><div class="cloud-record-head"><span class="cloud-status pending">${label}</span><small>#${String(r.targetOrderNumber||r.targetSaleId).slice(-6)}</small></div><div class="cloud-record-value">${r.createdByName||r.createdByEmail||'مشرف'}</div>${details}<div class="sale-action-menu mt"><button class="btn sm primary" data-approve="${r.id}">اعتماد الطلب</button><button class="btn sm danger" data-reject="${r.id}">رفض الطلب</button></div></div>`;
  }).join('')}</div></div>`;
+}
+
+
+function cloudPendingApprovals(){
+ const all=window.DOT_CLOUD?.state?.sales||[];
+ return all.filter(x=>x.status==='pending');
+}
+function renderCloudApprovals(main){
+ if(cloudRole()!=='owner')return;
+ const all=cloudPendingApprovals(), requests=all.filter(x=>x.requestType), sales=all.filter(x=>!x.requestType);
+ main.innerHTML=`<div class="page-head"><div><h2>مركز الاعتمادات</h2><div class="sub">المبيعات الجديدة وطلبات التعديل والإلغاء في شاشة واحدة.</div></div><span class="role-badge">${cloudNum(all.length)} بانتظارك</span></div>
+ <div class="cloud-kpis">
+  <div class="cloud-kpi"><span>مبيعات جديدة</span><b>${cloudNum(sales.length)}</b></div>
+  <div class="cloud-kpi cloud-warn"><span>طلبات تغيير</span><b>${cloudNum(requests.length)}</b></div>
+  <div class="cloud-kpi"><span>ألماس بانتظار الاعتماد</span><b>${cloudNum(sales.reduce((a,x)=>a+Number(x.diamonds||0),0))}</b></div>
+  <div class="cloud-kpi"><span>قيمة بانتظار الاعتماد</span><b>${cloudMoney(sales.reduce((a,x)=>a+Number(x.amount||0),0))}</b></div>
+ </div>
+ ${sales.length?`<div class="panel"><div class="panel-head"><div><h3>المبيعات الجديدة</h3><div class="small">راجع الكمية والقيمة قبل اعتماد الخصم من المخزون.</div></div></div>${cloudSalesContent(sales,true)}</div>`:'<div class="panel approval-empty">لا توجد مبيعات جديدة بانتظار الاعتماد.</div>'}
+ ${requests.length?changeRequestCards():'<div class="panel approval-empty">لا توجد طلبات تعديل أو إلغاء.</div>'}`;
+ bindCloudDecisions();
+}
+function cloudActivityEvents(){
+ const rows=window.DOT_CLOUD?.state?.sales||[], events=[];
+ const push=(time,type,title,detail,actor)=>{if(time)events.push({time,type,title,detail,actor})};
+ rows.forEach(x=>{
+   const who=x.createdByName||x.createdByEmail||'المستخدم';
+   const created=x.createdAt?.toDate?.()?.toISOString?.()||x.createdAt||x.saleDate;
+   push(created,'created',x.requestType?(x.requestType==='edit'?'طلب تعديل':'طلب إلغاء'):'تسجيل عملية',x.requestType?`للعملية #${String(x.targetOrderNumber||x.targetSaleId).slice(-6)}`:`${cloudNum(x.diamonds)} ماسة · ${cloudMoney(x.amount)}`,who);
+   if(x.status==='approved')push(x.approvedAt?.toDate?.()?.toISOString?.()||x.approvedAt,'approved','اعتماد','تم اعتماد العملية أو الطلب.',x.approvedByEmail||'المالك');
+   if(x.status==='rejected')push(x.approvedAt?.toDate?.()?.toISOString?.()||x.updatedAt?.toDate?.()?.toISOString?.()||x.saleDate,'rejected','رفض',x.rejectionReason?`السبب: ${x.rejectionReason}`:'تم رفض العملية أو الطلب.',x.approvedByEmail||'المالك');
+   if(x.status==='cancelled')push(x.cancelledAt?.toDate?.()?.toISOString?.()||x.updatedAt?.toDate?.()?.toISOString?.(),'cancelled','إلغاء عملية','تم إلغاء العملية وإعادة أثر المخزون عند الحاجة.',x.cancelledByEmail||'المالك');
+   (x.auditTrail||[]).forEach(a=>push(a.at,a.action||'update','تعديل عملية',a.action?.includes('cancel')?'تم تسجيل إجراء إلغاء.':'تم تعديل بيانات العملية.',a.actor?.name||a.actor?.email||'المالك'));
+ });
+ return events.sort((a,b)=>Date.parse(b.time||0)-Date.parse(a.time||0)).slice(0,120);
+}
+function renderCloudActivity(main){
+ if(cloudRole()!=='owner')return;
+ const events=cloudActivityEvents();
+ main.innerHTML=`<div class="page-head"><div><h2>سجل النشاط</h2><div class="sub">سجل مبسط لما سجلته المشرفة وما اعتمدته أو عدلته أنت.</div></div></div>
+ <div class="panel">${events.length?`<div class="activity-list">${events.map(e=>`<div class="activity-item"><div class="activity-item-head"><div><h4>${e.title}</h4><p>${e.detail||''}${e.actor?` · بواسطة ${e.actor}`:''}</p></div><span class="activity-time">${cloudActivityTime(e.time)}</span></div></div>`).join('')}</div>`:'<div class="empty">لا يوجد نشاط حتى الآن.</div>'}</div>`;
+}
+function cloudActivityTime(v){
+ const d=new Date(v);if(Number.isNaN(d.getTime()))return '—';
+ return new Intl.DateTimeFormat('en-GB',{dateStyle:'short',timeStyle:'short',hour12:false}).format(d);
+}
+function supervisorNotifications(){
+ const me=window.DOT_CLOUD?.state?.user?.uid, rows=window.DOT_CLOUD?.state?.sales||[];
+ return rows.filter(x=>x.createdBy===me&&(x.status==='approved'||x.status==='rejected'))
+  .sort((a,b)=>String(b.saleDate||'').localeCompare(String(a.saleDate||''))).slice(0,6);
+}
+function supervisorNotificationsHTML(){
+ const rows=supervisorNotifications();if(!rows.length)return '';
+ return `<div class="panel"><div class="panel-head"><div><h3>آخر الإشعارات</h3><div class="small">قرارات المالك على عملياتك وطلباتك.</div></div></div><div class="notification-list">${rows.map(x=>`<div class="notification-item"><div class="notification-item-head"><div><h4>${x.status==='approved'?'تم الاعتماد':'تم الرفض'} · #${String(x.orderNumber||x.targetOrderNumber||x.id).slice(-6)}</h4><p>${x.requestType?(x.requestType==='edit'?'طلب تعديل':'طلب إلغاء'):`${cloudNum(x.diamonds)} ماسة · ${cloudMoney(x.amount)}`}</p>${x.status==='rejected'&&x.rejectionReason?`<div class="reject-reason">سبب الرفض: ${x.rejectionReason}</div>`:''}</div><span class="cloud-status ${x.status}">${cloudStatus(x.status)}</span></div></div>`).join('')}</div></div>`;
 }
 
 function renderCloudSales(main){
@@ -4955,6 +5059,22 @@ document.getElementById('sale-edit-save')?.addEventListener('click',async()=>{
  finally{btn.disabled=false}
 });
 
+
+function updateSyncStatus(){
+ const pill=document.getElementById('sync-status-pill'),text=document.getElementById('sync-status-text');
+ if(!pill||!text)return;
+ const sync=window.DOT_CLOUD?.state?.sync||{}, online=navigator.onLine;
+ pill.classList.remove('offline','syncing');
+ if(!online||sync.status==='offline'){pill.classList.add('offline');text.textContent='دون اتصال';return}
+ if(sync.status==='syncing'){pill.classList.add('syncing');text.textContent='جاري المزامنة…';return}
+ const last=sync.lastSync?new Date(sync.lastSync):null;
+ text.textContent=last&&!Number.isNaN(last.getTime())?`متصل · ${last.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'متصل';
+}
+function updateQuickSaleButton(){
+ const btn=document.getElementById('quick-sale-fab');if(!btn)return;
+ btn.classList.toggle('hidden',app.view==='cloudNewSale'||!cloudReady());
+}
+
 function updateAccountMenu(){
   const cloud=window.DOT_CLOUD;
   if(!cloud?.state?.profile)return;
@@ -4989,9 +5109,12 @@ document.getElementById('account-logout')?.addEventListener('click',()=>{
   window.DOT_CLOUD?.logout();
 });
 
-window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';updateAccountMenu();app.view=role==='owner'?'dashboard':'supervisorHome';render()});
-window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers'].includes(app.view))render()});
+window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';updateAccountMenu();updateSyncStatus();app.view=role==='owner'?'dashboard':'supervisorHome';render()});
+window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();updateSyncStatus();if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity'].includes(app.view))render()});
 document.getElementById('cloud-logout')?.addEventListener('click',()=>window.DOT_CLOUD?.logout());
+document.getElementById('quick-sale-fab')?.addEventListener('click',()=>{app.view='cloudNewSale';closeMobileNav();render()});
+window.addEventListener('online',updateSyncStatus);
+window.addEventListener('offline',updateSyncStatus);
 document.getElementById('mobile-menu-btn')?.addEventListener('click',()=>{document.querySelector('.sidebar')?.classList.toggle('mobile-open');document.getElementById('mobile-overlay')?.classList.toggle('show')});
 document.getElementById('mobile-overlay')?.addEventListener('click',closeMobileNav);
 

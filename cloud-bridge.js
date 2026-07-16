@@ -6,8 +6,16 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, ad
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const state = { user:null, profile:null, sales:[], purchases:[], expenses:[], users:[], stats:{stockDiamonds:0}, ready:false };
+const state = { user:null, profile:null, sales:[], purchases:[], expenses:[], users:[], stats:{stockDiamonds:0}, ready:false, sync:{status:navigator.onLine?'connected':'offline',lastSync:null} };
+
 const listeners=[];
+function setSync(status,emit=true){
+  state.sync={status,lastSync:status==='connected'?new Date().toISOString():(state.sync?.lastSync||null)};
+  if(emit)notify();
+}
+window.addEventListener('online',()=>setSync('connected'));
+window.addEventListener('offline',()=>setSync('offline'));
+
 
 const notify=()=>window.dispatchEvent(new CustomEvent('dot-cloud-update',{detail:state}));
 const approvedSummary=x=>({
@@ -81,6 +89,7 @@ function subscribe(){
 
   listeners.push(onSnapshot(doc(db,'publicStats','current'),s=>{
     if(s.exists())state.stats=s.data();
+    state.sync={status:'connected',lastSync:new Date().toISOString()};
     if(state.profile.role==='supervisor')publishSupervisor();
     else notify();
   }));
@@ -88,6 +97,7 @@ function subscribe(){
   if(state.profile.role==='owner'){
     listeners.push(onSnapshot(query(collection(db,'sales'),orderBy('createdAt','desc'),limit(800)),s=>{
       state.sales=s.docs.map(d=>({id:d.id,...d.data()}));
+      state.sync={status:'connected',lastSync:new Date().toISOString()};
       syncApprovedSnapshot(state.sales);
       notify();
     }));
@@ -95,14 +105,15 @@ function subscribe(){
     listeners.push(onSnapshot(query(collection(db,'sales'),where('createdBy','==',state.user.uid),limit(800)),s=>{
       ownSales.clear();
       for(const d of s.docs)ownSales.set(d.id,{id:d.id,...d.data()});
+      state.sync={status:'connected',lastSync:new Date().toISOString()};
       publishSupervisor();
     },e=>console.error('own sales subscription',e)));
   }
 
   if(state.profile.role==='owner'){
-    listeners.push(onSnapshot(query(collection(db,'purchases'),orderBy('createdAt','desc'),limit(800)),s=>{state.purchases=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
-    listeners.push(onSnapshot(query(collection(db,'expenses'),orderBy('createdAt','desc'),limit(800)),s=>{state.expenses=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
-    listeners.push(onSnapshot(query(collection(db,'users'),orderBy('createdAt','desc')),s=>{state.users=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
+    listeners.push(onSnapshot(query(collection(db,'purchases'),orderBy('createdAt','desc'),limit(800)),s=>{state.purchases=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
+    listeners.push(onSnapshot(query(collection(db,'expenses'),orderBy('createdAt','desc'),limit(800)),s=>{state.expenses=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
+    listeners.push(onSnapshot(query(collection(db,'users'),orderBy('createdAt','desc')),s=>{state.users=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
   }
 }
 
@@ -247,13 +258,15 @@ const api={
   cancelSale:cancelSaleRecord,
   addPurchase:async d=>runTransaction(db,async tx=>{const sref=doc(db,'publicStats','current'),pref=doc(collection(db,'purchases')),ss=await tx.get(sref),cur=Number(ss.data()?.stockDiamonds||0);tx.set(pref,{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()});tx.set(sref,{stockDiamonds:cur+Number(d.diamonds||0),lastUpdatedAt:serverTimestamp()},{merge:true});}),
   addExpense:async d=>addDoc(collection(db,'expenses'),{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()}),
-  decide:async(id,status)=>runTransaction(db,async tx=>{
+  decide:async(id,status,reason='')=>runTransaction(db,async tx=>{
+    reason=String(reason||'').trim();
+    if(status==='rejected'&&!reason)throw new Error('سبب الرفض مطلوب.');
     const sref=doc(db,'sales',id),stref=doc(db,'publicStats','current'),ss=await tx.get(sref);
     if(!ss.exists())throw new Error('العملية غير موجودة');
     const sale=ss.data();
     if(sale.status!=='pending')return;
     if(sale.requestType){
-      const requestPatch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp()};
+      const requestPatch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp(),rejectionReason:status==='rejected'?reason:''};
       if(status==='approved'){
         const targetRef=doc(db,'sales',sale.targetSaleId),targetSnap=await tx.get(targetRef);
         if(!targetSnap.exists())throw new Error('العملية الأصلية غير موجودة.');
@@ -291,7 +304,7 @@ const api={
       tx.update(sref,requestPatch);
       return;
     }
-    const patch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp()};
+    const patch={status,approvedBy:state.user.uid,approvedByEmail:state.user.email,approvedAt:serverTimestamp(),updatedAt:serverTimestamp(),rejectionReason:status==='rejected'?reason:''};
     if(status==='approved'){
       const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0),qty=Number(sale.diamonds||0);
       if(cur<qty)throw new Error('المخزون غير كافٍ');
@@ -313,4 +326,4 @@ onAuthStateChanged(auth,async user=>{
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
   state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.11.0').catch(console.warn)}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.12.0').catch(console.warn)}

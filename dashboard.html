@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOT ALMASIAH · v21 Tax & Broadcaster Names</title>
+<title>DOT ALMASIAH · ERP v32</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -897,7 +897,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة v21 Tax & Names</p>
+      <p>نسخة ERP v32 المستقرة</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -906,7 +906,18 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=30.0.0"></script>
+<script>
+(function(){
+  const key='dot-v32-cache-cleaned';
+  if(sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key,'1');
+  try{
+    if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});}
+    if('caches' in window){caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).catch(()=>{});}
+  }catch(e){}
+})();
+</script>
+<script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -1449,7 +1460,7 @@ function renderDashboard(main){
 
   main.innerHTML = `
     <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — نسخة v21 Tax & Names</div></div>
+      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — نسخة ERP v32 المستقرة</div></div>
       <div class="flex gap">
         <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
         <button class="btn ${isMonthLocked(currentMonth())?'danger':'primary'}" id="dash-lock">${isMonthLocked(currentMonth())?'فك إغلاق الشهر':'إغلاق الشهر'}</button>
@@ -4151,7 +4162,7 @@ function v19LatestBackupDate(){
 function v19UpdateSidebarMeta(){
   const foot=document.querySelector('.sidebar-foot'); if(!foot) return;
   const latest=v19LatestBackupDate();
-  foot.innerHTML=`نسخة v21 Tax & Names · تخزين مستقل<span class="v19-backup-meta">آخر نسخة احتياطية: ${latest?escV11(fmtDT(latest)):'لم تُنشأ بعد'}</span>`;
+  foot.innerHTML=`نسخة ERP v32 المستقرة · تخزين مستقل<span class="v19-backup-meta">آخر نسخة احتياطية: ${latest?escV11(fmtDT(latest)):'لم تُنشأ بعد'}</span>`;
 }
 function v19AnnualHistoryHtml(){
   const rows=getStoreSeries().filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||'')));
@@ -4816,18 +4827,7 @@ render=function(){
 };
 const __ownerDashboardV25=renderDashboard;
 renderDashboard=function(main){
- __ownerDashboardV25(main);
- const c=window.DOT_CLOUD.state,sales=c.sales||[],pending=sales.filter(x=>x.status==='pending'),approved=sales.filter(x=>x.status==='approved');
- const cloudRevenue=approved.reduce((a,x)=>a+Number(x.amount||0),0), cloudDiamonds=approved.reduce((a,x)=>a+Number(x.diamonds||0),0);
- const storeSeries=getStoreSeries(), historicalProfit=storeSeries.reduce((a,x)=>a+Number(x.netProfit||0),0);
- const broadcasterProfit=(loadT(DB.broadcast)||[]).map(computeBroadcaster).reduce((a,x)=>a+Number(x.commissionSAR||0),0);
- const totalProfit=historicalProfit+broadcasterProfit;
- const insights=[];
- if(pending.length)insights.push(`يوجد ${cloudNum(pending.length)} عملية بانتظار اعتمادك.`);
- const avg=approved.length?cloudRevenue/approved.length:0;if(avg)insights.push(`متوسط قيمة العملية السحابية المعتمدة ${cloudMoney(avg)}.`);
- const stock=Number(c.stats?.stockDiamonds||0);if(stock<300000)insights.push('المخزون منخفض ويحتاج إلى دعم قريب.');else insights.push(`المخزون الحالي ${cloudNum(stock)} ماسة.`);
- const block=document.createElement('div');block.innerHTML=`<div class="cloud-assistant"><h3>مساعد الإدارة</h3><div class="cloud-insights">${insights.map(x=>`<div class="cloud-insight">${x}</div>`).join('')}</div></div>`;
- const first=main.querySelector('.page-head');first?.insertAdjacentElement('afterend',block);
+  __ownerDashboardV25(main);
 };
 
 const supervisorPeriod={mode:'daily',value:new Date().toISOString().slice(0,10)};
@@ -5119,69 +5119,6 @@ document.getElementById('mobile-overlay')?.addEventListener('click',closeMobileN
 
 /* ---------- init ---------- */
 render();
-
-
-/* =========================================================
-   v31 — Clean classic owner dashboard
-   مبني على نسخة المستودع الحالية، ولا يغيّر أي بيانات أو منطق سحابي.
-   ========================================================= */
-renderDashboard = function(main){
-  const {from,to}=computePeriodRange();
-  const series=getStoreSeries();
-  const storeRows=series.filter(e=>dateInRange(e.date,from,to));
-  const bcRows=loadT(DB.broadcast).filter(b=>monthInRange(b.month,from,to));
-  const settings=loadSettings();
-  const sales=storeRows.reduce((a,e)=>a+num(e.salesIncl),0);
-  const cogs=storeRows.reduce((a,e)=>a+num(e.cogs),0);
-  const expenses=storeRows.reduce((a,e)=>a+storeExpenses(e),0);
-  const storeProfit=storeRows.reduce((a,e)=>a+num(e.netProfit),0);
-  const margin=sales?storeProfit/sales:0;
-  const bcSalary=bcRows.reduce((a,b)=>a+computeBroadcaster(b).salarySAR,0);
-  const bcProfit=bcRows.reduce((a,b)=>a+computeBroadcaster(b).commissionSAR,0);
-  const grand=storeProfit+bcProfit;
-  const diamondsSold=storeRows.reduce((a,e)=>a+num(e.diamondsSold),0);
-  const diamondsPurchased=storeRows.reduce((a,e)=>a+num(e.diamondsPurchased),0);
-  const latest=series.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).pop();
-  const currentStock=latest?num(latest.remainingQty):num(settings.openingDiamonds||0);
-  const cloud=window.DOT_CLOUD?.state||{};
-  const pending=(cloud.sales||[]).filter(x=>x.status==='pending'&&!x.requestType).length;
-
-  main.className='';
-  main.innerHTML=`
-    <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">ملخص مباشر لأداء المتجر ووكالة المذيعين حسب الفترة المحددة.</div></div>
-      <div class="flex gap">
-        <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
-        <button class="btn ${isMonthLocked(currentMonth())?'danger':'primary'}" id="dash-lock">${isMonthLocked(currentMonth())?'فك إغلاق الشهر':'إغلاق الشهر'}</button>
-      </div>
-    </div>
-    ${periodFilterBar()}
-    ${pending?`<div class="alert info">يوجد <b>${ar(pending)}</b> عملية بيع بانتظار الاعتماد.</div>`:''}
-    <div class="cards">
-      <div class="card"><div class="label">مبيعات المتجر</div><div class="value">${sar(sales)}</div><div class="foot">شامل الضريبة</div></div>
-      <div class="card"><div class="label">الألماس المباع</div><div class="value">${ar(diamondsSold)}</div><div class="foot">خلال الفترة المحددة</div></div>
-      <div class="card"><div class="label">الألماس المشترى</div><div class="value">${ar(diamondsPurchased)}</div><div class="foot">خلال الفترة المحددة</div></div>
-      <div class="card accent"><div class="label">المخزون الحالي</div><div class="value gold">${ar(currentStock)}</div><div class="foot">الرصيد الحالي المسجل</div></div>
-      <div class="card"><div class="label">تكلفة الألماس المباع</div><div class="value">${sar(cogs)}</div><div class="foot">بحسب متوسط التكلفة</div></div>
-      <div class="card"><div class="label">مصروفات التشغيل</div><div class="value">${sar(expenses)}</div><div class="foot">المصروفات المسجلة للفترة</div></div>
-      <div class="card accent"><div class="label">صافي ربح المتجر</div><div class="value ${storeProfit>=0?'pos':'neg'}">${sar(storeProfit)}</div><div class="foot">هامش الربح: ${pct(margin)}</div></div>
-      <div class="card"><div class="label">رواتب المذيعين</div><div class="value">${sar(bcSalary)}</div><div class="foot">لا تدخل ضمن الربح</div></div>
-      <div class="card"><div class="label">ربح وكالة المذيعين</div><div class="value gold">${sar(bcProfit)}</div><div class="foot">عمولة الوكالة فقط</div></div>
-      <div class="card accent"><div class="label">الربح الإجمالي</div><div class="value ${grand>=0?'pos':'neg'}">${sar(grand)}</div><div class="foot">صافي المتجر + عمولة الوكالة</div></div>
-    </div>
-    <div class="panel"><h3>أداء الأشهر — صافي ربح المتجر</h3><div id="dash-chart"></div></div>
-    <div class="panel"><h3>ملخص الفترة المحددة</h3><div class="table-wrap"><table><thead><tr><th>البند</th><th>القيمة</th></tr></thead><tbody>
-      <tr><td>عدد سجلات المتجر</td><td>${ar(storeRows.length)}</td></tr>
-      <tr><td>عدد سجلات المذيعين</td><td>${ar(bcRows.length)}</td></tr>
-      <tr><td>الفترة</td><td>${from||'—'} إلى ${to||'—'}</td></tr>
-    </tbody></table></div></div>`;
-
-  bindPeriodBar();
-  document.getElementById('dash-whatsapp')?.addEventListener('click',()=>openWhatsappReport(currentMonth()));
-  document.getElementById('dash-lock')?.addEventListener('click',()=>{const m=currentMonth();setMonthLock(m,!isMonthLocked(m));alert((isMonthLocked(m)?'تم إغلاق ':'تم فك إغلاق ')+m);render();});
-  renderMonthlyChart(document.getElementById('dash-chart'));
-};
-
 </script>
 </body>
 </html>

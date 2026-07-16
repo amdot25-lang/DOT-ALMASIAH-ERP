@@ -930,7 +930,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
   </div>
 </div>
 <div id="sync-status-pill" class="sync-status-pill"><i></i><span id="sync-status-text">جاري الاتصال…</span></div>
-<button id="quick-sale-fab" class="quick-sale-fab" type="button">＋ تسجيل مبيعة</button>
+<button id="quick-sale-fab" class="quick-sale-fab" type="button">＋ تسجيل بيع</button>
 <div id="mobile-overlay" class="mobile-overlay"></div>
 <div id="app">
   <aside class="sidebar">
@@ -946,7 +946,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 </div>
 <div id="modal-root"></div>
 
-<script type="module" src="./cloud-bridge.js?v=27.0.0"></script>
+<script type="module" src="./cloud-bridge.js?v=27.1.0"></script>
 <script>
 /* =========================================================
    DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
@@ -1146,7 +1146,7 @@ function cloudUnifiedLedgerEntries(){
     diamondsPurchased:0,
     purchasesIncl:0,
     paymentSource:x.payment==='المتجر'?'other':'bank',
-    notes:`مبيعة سحابية ${x.orderNumber||x.id||''}`,
+    notes:`بيع سحابية ${x.orderNumber||x.id||''}`,
     cloudSource:'sale',
     cloudId:x.id,
     cloudOrderNumber:x.orderNumber||'',
@@ -4800,7 +4800,8 @@ render=function(){
    واجهة واحدة · مالك / مشرف
    ========================================================= */
 const CLOUD_OWNER_NAV=[
-{id:'dashboard',label:'مركز القيادة',ic:'◈'},
+{id:'dashboard',label:'لوحة التحكم',ic:'◈'},
+{id:'executiveCenter',label:'مركز القيادة التنفيذي',ic:'◎'},
 {id:'cloudNewSale',label:'تسجيل بيع جديد',ic:'＋'},
 {id:'cloudApprovals',label:'مركز الاعتمادات',ic:'✓'},
 {id:'cloudSales',label:'المبيعات والاعتمادات',ic:'◆'},
@@ -4858,12 +4859,12 @@ const __legacyUnifiedRender=render;
 render=function(){
  if(!cloudReady()){renderNav();return;}
  const role=cloudRole();
- const ownerOnly=['dashboard','store','broadcasters','import','tax','reports','admin','integrity','backup','cloudPurchases','cloudExpenses','cloudUsers','cloudApprovals','cloudActivity','cloudPerformance'];
+ const ownerOnly=['dashboard','store','broadcasters','import','tax','reports','admin','integrity','backup','cloudPurchases','cloudExpenses','cloudUsers','cloudApprovals','cloudActivity','cloudPerformance','executiveCenter'];
  if(role!=='owner'&&ownerOnly.includes(app.view))app.view='supervisorHome';
  document.body.dataset.erpView=app.view;updateQuickSaleButton();
-  if(['supervisorHome','cloudNewSale','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity','cloudPerformance'].includes(app.view)){
+  if(['supervisorHome','cloudNewSale','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity','cloudPerformance','executiveCenter'].includes(app.view)){
    renderNav();const main=document.getElementById('main');main.innerHTML='';
-   const map={supervisorHome:renderSupervisorHome,cloudNewSale:renderCloudNewSale,cloudApprovals:renderCloudApprovals,cloudSales:renderCloudSales,cloudPurchases:renderCloudPurchases,cloudStock:renderCloudStock,cloudExpenses:renderCloudExpenses,cloudUsers:renderCloudUsers,cloudActivity:renderCloudActivity,cloudPerformance:renderCloudPerformance};
+   const map={supervisorHome:renderSupervisorHome,cloudNewSale:renderCloudNewSale,cloudApprovals:renderCloudApprovals,cloudSales:renderCloudSales,cloudPurchases:renderCloudPurchases,cloudStock:renderCloudStock,cloudExpenses:renderCloudExpenses,cloudUsers:renderCloudUsers,cloudActivity:renderCloudActivity,cloudPerformance:renderCloudPerformance,executiveCenter:renderExecutiveCenter};
    map[app.view](main);return;
  }
  __legacyUnifiedRender();
@@ -4883,11 +4884,8 @@ function commandCenterHTMLSafe(){const x=buildCommandCenterSafe();if(x.error)ret
 
 const __ownerDashboardV25=renderDashboard;
 renderDashboard=function(main){
-  try{__ownerDashboardV25(main)}catch(e){console.error('Legacy dashboard render error',e);main.innerHTML=''}
-  const legacy=document.createElement('div');legacy.id='command-details';legacy.style.display='none';[...main.children].forEach(el=>legacy.appendChild(el));
-  const holder=document.createElement('div');holder.innerHTML=commandCenterHTMLSafe();main.appendChild(holder.firstElementChild);main.appendChild(legacy);
-  document.getElementById('command-open-approvals')?.addEventListener('click',()=>{app.view='cloudApprovals';render()});
-  document.getElementById('command-toggle-details')?.addEventListener('click',e=>{const open=legacy.style.display==='none';legacy.style.display=open?'block':'none';e.currentTarget.textContent=open?'إخفاء التفاصيل التشغيلية':'إظهار التفاصيل التشغيلية'});
+  if(cloudRole()==='owner'){renderDailyDashboard(main);return;}
+  __ownerDashboardV25(main);
 };
 
 const supervisorPeriod={mode:'daily',value:new Date().toISOString().slice(0,10)};
@@ -4944,7 +4942,7 @@ function renderSupervisorHome(main){
  document.getElementById('sp-apply').onclick=()=>{supervisorPeriod.value=document.getElementById('sp-value').value||supervisorPeriod.value;render()};
 }
 function renderCloudNewSale(main){
- main.innerHTML=`<div class="page-head"><div><h2>تسجيل بيع جديد</h2><div class="sub">تُرسل العملية إلى المالك للاعتماد قبل خصمها من المخزون.</div></div></div><div class="panel"><div class="field-grid"><div class="field"><label>تاريخ المبيعة</label><input id="cs-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>كمية الألماس</label><input id="cs-diamonds" type="number" min="1" inputmode="numeric"></div><div class="field"><label>مبلغ البيع بالريال</label><input id="cs-amount" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>طريقة الدفع</label><select id="cs-payment"><option>المتجر</option><option>تحويل بنكي</option></select></div><div class="field"><label>المرجع (اختياري)</label><input id="cs-ref"></div><div class="field"><label>ملاحظات</label><textarea id="cs-notes" rows="2"></textarea></div></div><div class="cloud-form-actions"><button class="btn primary" id="cs-save">حفظ وإرسال للاعتماد</button><span class="cloud-msg" id="cs-msg"></span></div></div>`;
+ main.innerHTML=`<div class="page-head"><div><h2>تسجيل بيع جديد</h2><div class="sub">تُرسل العملية إلى المالك للاعتماد قبل خصمها من المخزون.</div></div></div><div class="panel"><div class="field-grid"><div class="field"><label>تاريخ البيع</label><input id="cs-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>كمية الألماس</label><input id="cs-diamonds" type="number" min="1" inputmode="numeric"></div><div class="field"><label>مبلغ البيع بالريال</label><input id="cs-amount" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>طريقة الدفع</label><select id="cs-payment"><option>المتجر</option><option>تحويل بنكي</option></select></div><div class="field"><label>المرجع (اختياري)</label><input id="cs-ref"></div><div class="field"><label>ملاحظات</label><textarea id="cs-notes" rows="2"></textarea></div></div><div class="cloud-form-actions"><button class="btn primary" id="cs-save">حفظ وإرسال للاعتماد</button><span class="cloud-msg" id="cs-msg"></span></div></div>`;
  document.getElementById('cs-save').onclick=async()=>{const b=document.getElementById('cs-save'),m=document.getElementById('cs-msg'),diamonds=Number(document.getElementById('cs-diamonds').value),amount=Number(document.getElementById('cs-amount').value);if(!diamonds||amount<0){m.textContent='أدخل كمية الألماس ومبلغ البيع.';return}b.disabled=true;m.textContent='جاري الحفظ…';try{const order=`DM-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${Date.now().toString().slice(-6)}`;await window.DOT_CLOUD.addSale({orderNumber:order,saleDate:document.getElementById('cs-date').value,diamonds,amount,payment:document.getElementById('cs-payment').value,reference:document.getElementById('cs-ref').value.trim(),notes:document.getElementById('cs-notes').value.trim()});m.textContent='تم تسجيل العملية وإرسالها للمالك.';document.getElementById('cs-diamonds').value='';document.getElementById('cs-amount').value='';}catch(e){m.textContent=e.message||e}finally{b.disabled=false}};
 }
 function canEditCloudSale(x){
@@ -5101,7 +5099,7 @@ function smartAlerts(){
  if(pct>=100)alerts.push({level:'',title:'تم تحقيق هدف الشهر',text:`نسبة الإنجاز ${cloudNum(pct)}%.`});
  else if(expected<goal)alerts.push({level:'warn',title:'التوقع أقل من الهدف',text:`المتوقع ${cloudNum(Math.round(expected))} من هدف ${cloudNum(goal)} ماسة.`});
  else alerts.push({level:'',title:'المسار الحالي يحقق الهدف',text:`المتوقع ${cloudNum(Math.round(expected))} ماسة بنهاية الشهر.`});
- if(hoursNoSale!==null&&hoursNoSale>=24)alerts.push({level:'warn',title:'لا توجد مبيعات حديثة',text:`آخر مبيعة معتمدة قبل نحو ${cloudNum(Math.floor(hoursNoSale/24))} يوم.`});
+ if(hoursNoSale!==null&&hoursNoSale>=24)alerts.push({level:'warn',title:'لا توجد مبيعات حديثة',text:`آخر بيع معتمدة قبل نحو ${cloudNum(Math.floor(hoursNoSale/24))} يوم.`});
  if(!todayApproved.length)alerts.push({level:'warn',title:'لا توجد مبيعات معتمدة اليوم',text:'قد تكون هناك عمليات معلقة أو لم يبدأ البيع بعد.'});
  return alerts.slice(0,8);
 }
@@ -5109,6 +5107,85 @@ function smartAlertsHTML(){
  const alerts=smartAlerts();
  return `<div class="smart-alerts-grid">${alerts.map(a=>`<div class="smart-alert ${a.level}"><i class="smart-alert-dot"></i><div><h4>${a.title}</h4><p>${a.text}</p></div></div>`).join('')}</div>`;
 }
+
+function dailyDashboardData(){
+ const cloud=window.DOT_CLOUD?.state||{};
+ const all=(cloud.sales||[]).filter(x=>!x.requestType&&x.status!=='cancelled');
+ const approved=all.filter(x=>x.status==='approved');
+ const pending=all.filter(x=>x.status==='pending');
+ const today=new Date(), todayKey=today.toISOString().slice(0,10), monthKey=todayKey.slice(0,7);
+ const todayRows=approved.filter(x=>String(x.saleDate||'').slice(0,10)===todayKey);
+ const monthRows=approved.filter(x=>String(x.saleDate||'').slice(0,7)===monthKey);
+ const historicalMonth=(typeof ccStoreSeries==='function'?ccStoreSeries():[]).filter(x=>String(x.date||'').slice(0,7)===monthKey);
+ const salesToday=todayRows.reduce((a,x)=>a+Number(x.amount||0),0);
+ const diamondsToday=todayRows.reduce((a,x)=>a+Number(x.diamonds||0),0);
+ const diamondsMonth=monthRows.reduce((a,x)=>a+Number(x.diamonds||0),0)+historicalMonth.reduce((a,x)=>a+Number(x.diamondsSold||0),0);
+ const goal=typeof ccGoal==='function'?ccGoal():3000000;
+ const pct=goal?Math.min(999,diamondsMonth/goal*100):0;
+ const remaining=Math.max(0,goal-diamondsMonth);
+ const day=today.getDate(), dim=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(), daysLeft=Math.max(1,dim-day);
+ const neededDaily=remaining/daysLeft;
+ const expected=day?diamondsMonth/day*dim:0;
+ const stock=Number(cloud.stats?.stockDiamonds||0);
+ const storeRows=typeof ccStoreSeries==='function'?ccStoreSeries():[];
+ const storeProfit=storeRows.reduce((a,x)=>a+Number(x.netProfit||0),0);
+ const agencyRows=typeof ccBroadcastRows==='function'?ccBroadcastRows():[];
+ const agencyProfit=agencyRows.reduce((a,x)=>a+(typeof ccCommission==='function'?ccCommission(x):Number(x.commissionSAR||0)),0);
+ const totalProfit=storeProfit+agencyProfit;
+ return {approved,pending,salesToday,diamondsToday,diamondsMonth,goal,pct,remaining,neededDaily,expected,stock,storeProfit,agencyProfit,totalProfit};
+}
+function renderDailyDashboard(main){
+ const x=dailyDashboardData();
+ main.innerHTML=`<div class="page-head"><div><h2>لوحة التحكم</h2><div class="sub">ملخص التشغيل اليومي للمتجر والوكالة.</div></div></div>
+ <div class="cards v19-primary-cards">
+  <div class="card"><div class="label">صافي ربح المتجر</div><div class="value ${x.storeProfit>=0?'pos':'neg'}">${sar(x.storeProfit)} ر.س</div><div class="foot">بعد تكلفة المباع والمصروفات</div></div>
+  <div class="card"><div class="label">ربح وكالة المذيعين</div><div class="value gold">${sar(x.agencyProfit)} ر.س</div><div class="foot">عمولة الوكالة</div></div>
+  <div class="card accent"><div class="label">الربح الإجمالي</div><div class="value ${x.totalProfit>=0?'pos':'neg'}">${sar(x.totalProfit)} ر.س</div><div class="foot">ربح المتجر + ربح وكالة المذيعين</div></div>
+ </div>
+ <div class="cloud-kpis">
+  <div class="cloud-kpi"><span>مبيعات اليوم</span><b>${cloudMoney(x.salesToday)}</b></div>
+  <div class="cloud-kpi"><span>ألماس اليوم</span><b>${cloudNum(x.diamondsToday)}</b></div>
+  <div class="cloud-kpi"><span>المخزون الحالي</span><b>${cloudNum(x.stock)}</b></div>
+  <div class="cloud-kpi cloud-warn"><span>بانتظار الاعتماد</span><b>${cloudNum(x.pending.length)}</b></div>
+ </div>
+ <div class="panel">
+  <div class="panel-head"><div><h3>هدف الألماس الشهري</h3><div class="small">متابعة الهدف والمباع والمتبقي والتوقع.</div></div><button class="btn" id="daily-open-target">تعديل الهدف</button></div>
+  <div class="command-summary">
+   <div class="command-summary-panel"><h3>نسبة الإنجاز</h3><div class="command-metric"><b class="gold">${cloudNum(x.pct)}%</b></div><div class="command-progress"><i style="width:${Math.min(100,x.pct)}%"></i></div><div class="command-foot">${cloudNum(x.diamondsMonth)} / ${cloudNum(x.goal)} ماسة</div></div>
+   <div class="command-summary-panel"><h3>المتبقي والمطلوب</h3><div class="command-metric"><span>المتبقي</span><b>${cloudNum(x.remaining)}</b></div><div class="command-metric"><span>المطلوب يوميًا</span><b>${cloudNum(Math.ceil(x.neededDaily))}</b></div></div>
+   <div class="command-summary-panel"><h3>التوقع</h3><div class="command-metric"><span>المتوقع نهاية الشهر</span><b>${cloudNum(Math.round(x.expected))}</b></div><div class="command-foot">${x.expected>=x.goal?'المسار الحالي يحقق الهدف':'المسار الحالي يحتاج دعمًا'}</div></div>
+  </div>
+ </div>
+ <div class="panel"><div class="panel-head"><div><h3>سجل المبيعات</h3><div class="small">أحدث العمليات السحابية المعتمدة والمعلّقة.</div></div><button class="btn primary" id="daily-new-sale">تسجيل بيع</button></div>${cloudSalesContent((window.DOT_CLOUD?.state?.sales||[]).filter(x=>!x.requestType&&x.status!=='cancelled').slice(0,12),true)}</div>`;
+ document.getElementById('daily-new-sale')?.addEventListener('click',()=>{app.view='cloudNewSale';render()});
+ document.getElementById('daily-open-target')?.addEventListener('click',()=>{
+   const btn=[...document.querySelectorAll('button')].find(b=>b.textContent.includes('تعديل الهدف'));
+   if(btn&&btn!==document.getElementById('daily-open-target'))btn.click();
+   else alert('يمكن تعديل الهدف من التفاصيل التشغيلية أو قسم الأرباح.');
+ });
+ bindCloudDecisions();
+}
+function renderExecutiveCenter(main){
+ if(cloudRole()!=='owner')return;
+ main.innerHTML=`<div class="page-head"><div><h2>مركز القيادة التنفيذي</h2><div class="sub">التحليل والتنبيهات والبحث والأداء والنسخ الاحتياطي في قسم مستقل.</div></div></div>
+ ${commandCenterHTMLSafe()}
+ <div class="panel"><h3>التنبيهات الذكية</h3>${smartAlertsHTML()}</div>
+ <div class="panel"><div class="panel-head"><div><h3>أدوات الإدارة</h3><div class="small">وصول مباشر إلى الأدوات التحليلية.</div></div></div>
+  <div class="command-actions">
+   <button class="btn" id="exec-performance">لوحة الأداء</button>
+   <button class="btn" id="exec-activity">سجل النشاط</button>
+   <button class="btn" id="exec-search">البحث الشامل</button>
+   <button class="btn" id="exec-backup">النسخة الاحتياطية</button>
+  </div>
+ </div>`;
+ document.getElementById('command-open-approvals')?.addEventListener('click',()=>{app.view='cloudApprovals';render()});
+ document.getElementById('command-toggle-details')?.remove();
+ document.getElementById('exec-performance')?.addEventListener('click',()=>{app.view='cloudPerformance';render()});
+ document.getElementById('exec-activity')?.addEventListener('click',()=>{app.view='cloudActivity';render()});
+ document.getElementById('exec-search')?.addEventListener('click',openGlobalSearch);
+ document.getElementById('exec-backup')?.addEventListener('click',()=>{app.view='backup';render()});
+}
+
 function renderCloudPerformance(main){
  if(cloudRole()!=='owner')return;
  const rows=smartAllSales().filter(x=>x.status==='approved');
@@ -5278,7 +5355,7 @@ document.getElementById('account-logout')?.addEventListener('click',()=>{
 });
 
 window.addEventListener('dot-cloud-ready',e=>{const role=e.detail.profile.role;document.getElementById('cloud-loading')?.classList.add('hidden');document.getElementById('cloud-role-label').textContent=role==='owner'?'المالك · صلاحية كاملة':'المشرف · مبيعات فقط';updateAccountMenu();updateSyncStatus();app.view=role==='owner'?'dashboard':'supervisorHome';render()});
-window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();updateSyncStatus();if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity','cloudPerformance'].includes(app.view))render()});
+window.addEventListener('dot-cloud-update',()=>{updateAccountMenu();updateSyncStatus();if(cloudReady()&&['dashboard','store','reports','supervisorHome','cloudApprovals','cloudSales','cloudPurchases','cloudStock','cloudExpenses','cloudUsers','cloudActivity','cloudPerformance','executiveCenter'].includes(app.view))render()});
 document.getElementById('cloud-logout')?.addEventListener('click',()=>window.DOT_CLOUD?.logout());
 
 document.getElementById('global-search-btn')?.addEventListener('click',openGlobalSearch);

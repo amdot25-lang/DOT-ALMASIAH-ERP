@@ -1,7 +1,7 @@
 import { firebaseConfig, OWNER_EMAIL } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, orderBy, limit, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -30,7 +30,24 @@ async function ensureProfile(user){
 function subscribe(){
   listeners.splice(0).forEach(x=>x());
   listeners.push(onSnapshot(doc(db,'publicStats','current'),s=>{if(s.exists())state.stats=s.data();notify();}));
-  listeners.push(onSnapshot(query(collection(db,'sales'),orderBy('createdAt','desc'),limit(800)),s=>{state.sales=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
+  if(state.profile.role==='owner'){
+    listeners.push(onSnapshot(query(collection(db,'sales'),orderBy('createdAt','desc'),limit(800)),s=>{state.sales=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
+  }else{
+    // Firestore rules are not filters. Supervisors use two permitted queries:
+    // 1) every approved sale, 2) all of their own sales (including pending/rejected).
+    const merged=new Map();
+    const publish=()=>{state.sales=[...merged.values()].sort((a,b)=>{
+      const av=a.createdAt?.toMillis?.()||Date.parse(a.saleDate||'')||0;
+      const bv=b.createdAt?.toMillis?.()||Date.parse(b.saleDate||'')||0;
+      return bv-av;
+    });notify();};
+    listeners.push(onSnapshot(query(collection(db,'sales'),where('status','==','approved'),limit(800)),s=>{
+      for(const d of s.docs)merged.set(d.id,{id:d.id,...d.data()});publish();
+    },e=>console.error('approved sales subscription',e)));
+    listeners.push(onSnapshot(query(collection(db,'sales'),where('createdBy','==',state.user.uid),limit(800)),s=>{
+      for(const d of s.docs)merged.set(d.id,{id:d.id,...d.data()});publish();
+    },e=>console.error('own sales subscription',e)));
+  }
   if(state.profile.role==='owner'){
     listeners.push(onSnapshot(query(collection(db,'purchases'),orderBy('createdAt','desc'),limit(800)),s=>{state.purchases=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
     listeners.push(onSnapshot(query(collection(db,'expenses'),orderBy('createdAt','desc'),limit(800)),s=>{state.expenses=s.docs.map(d=>({id:d.id,...d.data()}));notify();}));
@@ -56,4 +73,4 @@ onAuthStateChanged(auth,async user=>{
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
   state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
-if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.5.0').catch(console.warn)}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js?v=25.7.0').catch(console.warn)}

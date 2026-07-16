@@ -20,7 +20,7 @@ service cloud.firestore {
       allow create: if isOwner() || (activeSupervisor()
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == 'pending');
-      allow read: if isOwner() || (activeSupervisor() && resource.data.createdBy == request.auth.uid);
+      allow read: if isOwner() || (activeSupervisor() && (resource.data.status == 'approved' || resource.data.createdBy == request.auth.uid));
       allow update: if isOwner();
       allow delete: if false;
     }

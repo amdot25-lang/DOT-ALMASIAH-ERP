@@ -1,0 +1,32 @@
+{
+  "release": "v45.7",
+  "scope": "supervisor date follows device local day",
+  "changed_runtime_files": [
+    "dashboard.html"
+  ],
+  "checks": {
+    "local_date_helper": true,
+    "supervisor_defaults_local_today": true,
+    "dashboard_auto_follows_today": true,
+    "manual_date_still_supported": true,
+    "new_sale_local_date": true,
+    "order_local_date": true,
+    "date_reset_after_sale": true,
+    "utc_supervisor_default_removed": true,
+    "v456_layout_preserved": true,
+    "firestore_preserved": true
+  },
+  "inline_javascript_blocks_checked": 2,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "cloud-bridge.js",
+    "firestore.rules",
+    "firebase-config.js",
+    "app.js",
+    "legacy-dashboard.html"
+  ],
+  "calculation_logic_changed": false,
+  "firestore_changed": false,
+  "owner_dashboard_changed": false
+}

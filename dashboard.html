@@ -1512,7 +1512,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45.6 السحابية</p>
+      <p>نسخة ERP v45.7 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1535,7 +1535,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45.6 · Target Summary Cards
+   DOT ALMASIAH — ERP v45.7 · Supervisor Local Today
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -1610,6 +1610,15 @@ function saveSettings(s){
 }
 function genId(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function nowISO(){ return new Date().toISOString(); }
+function localDateISO(date=new Date()){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function localMonthISO(date=new Date()){
+  return localDateISO(date).slice(0,7);
+}
 function fmtDT(iso){ const d=new Date(iso); return d.toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}); }
 
 function logAudit(action, meta){
@@ -5401,7 +5410,7 @@ renderDashboard=function(main){
   __ownerDashboardV25(main);
 };
 
-const supervisorPeriod={mode:'daily',value:new Date().toISOString().slice(0,10)};
+const supervisorPeriod={mode:'daily',value:localDateISO(),followsToday:true};
 function supervisorDisplayName(){
  const st=window.DOT_CLOUD?.state||{}, p=st.profile||{}, u=st.user||{};
  const candidates=[p.name,u.displayName];
@@ -5409,7 +5418,7 @@ function supervisorDisplayName(){
  return String(u.email||p.email||'مشرف').split('@')[0];
 }
 function supervisorPeriodRange(){
- const mode=supervisorPeriod.mode, value=supervisorPeriod.value||new Date().toISOString().slice(0,10);
+ const mode=supervisorPeriod.mode, value=supervisorPeriod.value||localDateISO();
  if(mode==='daily')return {from:value,to:value,label:value};
  if(mode==='monthly'){
    const [y,m]=value.split('-').map(Number), last=new Date(y,m,0).getDate();
@@ -5460,6 +5469,9 @@ function supervisorRecentSalesHTMLV41(rows){
 }
 function renderSupervisorHome(main){
  try{
+  if(supervisorPeriod.mode==='daily'&&supervisorPeriod.followsToday){
+    supervisorPeriod.value=localDateISO();
+  }
   const all=supervisorSalesLedger(), filtered=supervisorFilteredSales(all);
   const visible=filtered.filter(x=>x.status!=='cancelled');
   const approved=visible.filter(x=>x.status==='approved');
@@ -5470,7 +5482,7 @@ function renderSupervisorHome(main){
   const operationCount=visible.length;
   const averageDiamonds=approved.length?Math.round(diamonds/approved.length):0;
 
-  const now=new Date(), monthKey=now.toISOString().slice(0,7);
+  const now=new Date(), monthKey=localMonthISO(now);
   const monthApproved=all.filter(x=>x.status==='approved'&&String(x.saleDate||'').slice(0,7)===monthKey);
   const monthDiamonds=monthApproved.reduce((a,x)=>a+Number(x.diamonds||0),0);
   const settings=loadSettings();
@@ -5478,7 +5490,7 @@ function renderSupervisorHome(main){
   const goalProgress=monthlyTarget?Math.min(999,(monthDiamonds/monthlyTarget)*100):0;
 
   const last7Start=new Date(now); last7Start.setDate(now.getDate()-6);
-  const last7ISO=last7Start.toISOString().slice(0,10);
+  const last7ISO=localDateISO(last7Start);
   const last7Sold=all.filter(x=>x.status==='approved'&&String(x.saleDate||'').slice(0,10)>=last7ISO)
     .reduce((a,x)=>a+Number(x.diamonds||0),0);
   const dailyAverage=last7Sold/7;
@@ -5533,13 +5545,15 @@ function renderSupervisorHome(main){
   const mode=document.getElementById('sp-mode');
   if(mode)mode.onchange=e=>{
     supervisorPeriod.mode=e.target.value;
-    supervisorPeriod.value=e.target.value==='daily'?new Date().toISOString().slice(0,10):e.target.value==='monthly'?new Date().toISOString().slice(0,7):String(new Date().getFullYear());
+    supervisorPeriod.followsToday=true;
+    supervisorPeriod.value=e.target.value==='daily'?localDateISO():e.target.value==='monthly'?localMonthISO():String(new Date().getFullYear());
     render();
   };
   const apply=document.getElementById('sp-apply');
   if(apply)apply.onclick=()=>{
     const value=document.getElementById('sp-value');
     supervisorPeriod.value=value?.value||supervisorPeriod.value;
+    supervisorPeriod.followsToday=supervisorPeriod.mode==='daily'&&supervisorPeriod.value===localDateISO();
     render();
   };
  }catch(err){
@@ -5550,8 +5564,8 @@ function renderSupervisorHome(main){
  }
 }
 function renderCloudNewSale(main){
- main.innerHTML=`<div class="page-head"><div><h2>تسجيل بيع جديد</h2><div class="sub">تُرسل العملية إلى المالك للاعتماد قبل خصمها من المخزون.</div></div></div><div class="panel"><div class="field-grid"><div class="field"><label>تاريخ المبيعة</label><input id="cs-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>كمية الألماس</label><input id="cs-diamonds" type="number" min="1" inputmode="numeric"></div><div class="field"><label>مبلغ البيع بالريال</label><input id="cs-amount" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>طريقة الدفع</label><select id="cs-payment"><option>المتجر</option><option>تحويل بنكي</option></select></div><div class="field"><label>المرجع (اختياري)</label><input id="cs-ref"></div><div class="field"><label>ملاحظات</label><textarea id="cs-notes" rows="2"></textarea></div></div><div class="cloud-form-actions"><button class="btn primary" id="cs-save">حفظ وإرسال للاعتماد</button><span class="cloud-msg" id="cs-msg"></span></div></div>`;
- document.getElementById('cs-save').onclick=async()=>{const b=document.getElementById('cs-save'),m=document.getElementById('cs-msg'),diamonds=Number(document.getElementById('cs-diamonds').value),amount=Number(document.getElementById('cs-amount').value);if(!diamonds||amount<0){m.textContent='أدخل كمية الألماس ومبلغ البيع.';return}b.disabled=true;m.textContent='جاري الحفظ…';try{const order=`DM-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${Date.now().toString().slice(-6)}`;await window.DOT_CLOUD.addSale({orderNumber:order,saleDate:document.getElementById('cs-date').value,diamonds,amount,payment:document.getElementById('cs-payment').value,reference:document.getElementById('cs-ref').value.trim(),notes:document.getElementById('cs-notes').value.trim()});m.textContent='تم تسجيل العملية وإرسالها للمالك.';document.getElementById('cs-diamonds').value='';document.getElementById('cs-amount').value='';}catch(e){m.textContent=e.message||e}finally{b.disabled=false}};
+ main.innerHTML=`<div class="page-head"><div><h2>تسجيل بيع جديد</h2><div class="sub">تُرسل العملية إلى المالك للاعتماد قبل خصمها من المخزون.</div></div></div><div class="panel"><div class="field-grid"><div class="field"><label>تاريخ المبيعة</label><input id="cs-date" type="date" value="${localDateISO()}"></div><div class="field"><label>كمية الألماس</label><input id="cs-diamonds" type="number" min="1" inputmode="numeric"></div><div class="field"><label>مبلغ البيع بالريال</label><input id="cs-amount" type="number" min="0" step="0.01" inputmode="decimal"></div><div class="field"><label>طريقة الدفع</label><select id="cs-payment"><option>المتجر</option><option>تحويل بنكي</option></select></div><div class="field"><label>المرجع (اختياري)</label><input id="cs-ref"></div><div class="field"><label>ملاحظات</label><textarea id="cs-notes" rows="2"></textarea></div></div><div class="cloud-form-actions"><button class="btn primary" id="cs-save">حفظ وإرسال للاعتماد</button><span class="cloud-msg" id="cs-msg"></span></div></div>`;
+ document.getElementById('cs-save').onclick=async()=>{const b=document.getElementById('cs-save'),m=document.getElementById('cs-msg'),diamonds=Number(document.getElementById('cs-diamonds').value),amount=Number(document.getElementById('cs-amount').value);if(!diamonds||amount<0){m.textContent='أدخل كمية الألماس ومبلغ البيع.';return}b.disabled=true;m.textContent='جاري الحفظ…';try{const order=`DM-${localDateISO().replaceAll('-','')}-${Date.now().toString().slice(-6)}`;await window.DOT_CLOUD.addSale({orderNumber:order,saleDate:document.getElementById('cs-date').value,diamonds,amount,payment:document.getElementById('cs-payment').value,reference:document.getElementById('cs-ref').value.trim(),notes:document.getElementById('cs-notes').value.trim()});m.textContent='تم تسجيل العملية وإرسالها للمالك.';document.getElementById('cs-diamonds').value='';document.getElementById('cs-amount').value='';document.getElementById('cs-date').value=localDateISO();}catch(e){m.textContent=e.message||e}finally{b.disabled=false}};
 }
 function canEditCloudSale(x){
  if(x.historical||x.requestType||x.status==='cancelled')return false;
@@ -5686,8 +5700,8 @@ function renderCloudSales(main){
  const approved=rows.filter(x=>x.status==='approved'), pending=rows.filter(x=>!x.historical&&x.status==='pending');
  main.innerHTML=`<div class="page-head"><div><h2>${owner?'المبيعات والاعتمادات':'سجل المبيعات'}</h2><div class="sub">${owner?'متابعة العمليات السحابية وحالة كل عملية.':'السجل التاريخي والمبيعات السحابية وفق الفترة المختارة.'}</div></div></div>${owner?changeRequestCards():supervisorFilterHTML()}<div class="cloud-kpis"><div class="cloud-kpi"><span>عدد العمليات</span><b>${cloudNum(rows.length)}</b><small>${owner?'السحابي':range.label}</small></div><div class="cloud-kpi"><span>الألماس المباع</span><b>${cloudNum(approved.reduce((a,x)=>a+Number(x.diamonds||0),0))}</b></div><div class="cloud-kpi cloud-warn"><span>المعلّق</span><b>${cloudNum(pending.length)}</b></div><div class="cloud-kpi"><span>إجمالي المبيعات</span><b>${cloudMoney(approved.reduce((a,x)=>a+Number(x.amount||0),0))}</b></div></div><div class="panel">${cloudSalesContent(rows,owner)}</div>`;
  bindCloudDecisions();if(!owner){
-   document.getElementById('sp-mode').onchange=e=>{supervisorPeriod.mode=e.target.value;supervisorPeriod.value=e.target.value==='daily'?new Date().toISOString().slice(0,10):e.target.value==='monthly'?new Date().toISOString().slice(0,7):String(new Date().getFullYear());render()};
-   document.getElementById('sp-apply').onclick=()=>{supervisorPeriod.value=document.getElementById('sp-value').value||supervisorPeriod.value;render()};
+   document.getElementById('sp-mode').onchange=e=>{supervisorPeriod.mode=e.target.value;supervisorPeriod.followsToday=true;supervisorPeriod.value=e.target.value==='daily'?localDateISO():e.target.value==='monthly'?localMonthISO():String(new Date().getFullYear());render()};
+   document.getElementById('sp-apply').onclick=()=>{supervisorPeriod.value=document.getElementById('sp-value').value||supervisorPeriod.value;supervisorPeriod.followsToday=supervisorPeriod.mode==='daily'&&supervisorPeriod.value===localDateISO();render()};
  }
 }
 function renderCloudPurchases(main){if(cloudRole()!=='owner')return;const rows=window.DOT_CLOUD.state.purchases||[];main.innerHTML=`<div class="page-head"><div><h2>المشتريات والمخزون</h2><div class="sub">إضافة الألماس للمخزون مع حفظ قيمة الشراء والمورد.</div></div></div><div class="cloud-kpis"><div class="cloud-kpi"><span>المخزون الحالي</span><b>${cloudNum(window.DOT_CLOUD.state.stats?.stockDiamonds||0)}</b></div><div class="cloud-kpi"><span>الألماس المشترى سحابيًا</span><b>${cloudNum(rows.reduce((a,x)=>a+Number(x.diamonds||0),0))}</b></div><div class="cloud-kpi"><span>قيمة المشتريات</span><b>${cloudMoney(rows.reduce((a,x)=>a+Number(x.amount||0),0))}</b></div><div class="cloud-kpi"><span>عدد الدفعات</span><b>${cloudNum(rows.length)}</b></div></div><div class="panel"><h3>إضافة عملية شراء</h3><div class="field-grid"><div class="field"><label>التاريخ</label><input id="cp-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div class="field"><label>كمية الألماس</label><input id="cp-qty" type="number" min="1"></div><div class="field"><label>قيمة الشراء</label><input id="cp-amount" type="number" min="0" step="0.01"></div><div class="field"><label>المورد</label><input id="cp-supplier"></div><div class="field"><label>ملاحظات</label><input id="cp-notes"></div></div><div class="cloud-form-actions"><button class="btn primary" id="cp-save">حفظ وإضافة للمخزون</button><span class="cloud-msg" id="cp-msg"></span></div></div><div class="panel"><h3>سجل المشتريات السحابية</h3>${rows.length?`<div class="table-wrap"><table><thead><tr><th>التاريخ</th><th>الكمية</th><th>القيمة</th><th>المورد</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${cloudDate(x.purchaseDate)}</td><td>${cloudNum(x.diamonds)}</td><td>${cloudMoney(x.amount)}</td><td>${x.supplier||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">لا توجد مشتريات سحابية بعد.</div>'}</div>`;document.getElementById('cp-save').onclick=async()=>{const q=Number(document.getElementById('cp-qty').value),a=Number(document.getElementById('cp-amount').value),m=document.getElementById('cp-msg');if(!q){m.textContent='أدخل كمية الألماس.';return}try{await window.DOT_CLOUD.addPurchase({purchaseDate:document.getElementById('cp-date').value,diamonds:q,amount:a,supplier:document.getElementById('cp-supplier').value.trim(),notes:document.getElementById('cp-notes').value.trim()});m.textContent='تمت الإضافة وتحديث المخزون.'}catch(e){m.textContent=e.message||e}}}

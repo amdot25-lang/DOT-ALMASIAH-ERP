@@ -912,6 +912,102 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 }
 </style>
 
+
+<style id="v37-professional-polish">
+/* v37 — polished mobile header and unified spacing */
+.account-menu-wrap{
+  top:max(16px,env(safe-area-inset-top))!important;
+  left:max(16px,env(safe-area-inset-left))!important;
+}
+.account-menu-btn{
+  min-width:154px!important;
+  max-width:min(205px,calc(100vw - 94px))!important;
+  height:48px!important;
+  padding:6px 9px!important;
+  border-radius:15px!important;
+  gap:8px!important;
+}
+.account-user-icon{
+  width:32px!important;
+  height:32px!important;
+}
+.account-user-icon::after{font-size:10px!important}
+.account-user-text strong{
+  font-size:12px!important;
+  max-width:112px!important;
+}
+.account-user-text small{
+  display:flex!important;
+  align-items:center!important;
+  gap:5px!important;
+  font-size:9px!important;
+  color:var(--text-dim)!important;
+}
+.account-user-text small::before{
+  content:"";
+  width:6px;height:6px;border-radius:50%;
+  background:#69d995;
+  box-shadow:0 0 0 3px rgba(105,217,149,.10);
+  flex:0 0 auto;
+}
+.account-menu-wrap.offline .account-user-text small::before{
+  background:#df6868;
+  box-shadow:0 0 0 3px rgba(223,104,104,.10);
+}
+.account-menu-wrap.syncing .account-user-text small::before{
+  background:var(--gold-bright);
+  animation:syncPulse 1s infinite;
+}
+.account-dropdown{top:56px!important}
+.mobile-menu-btn{
+  top:max(16px,env(safe-area-inset-top))!important;
+  right:max(16px,env(safe-area-inset-right))!important;
+  width:48px!important;height:48px!important;
+  border-radius:15px!important;
+}
+.sync-status-pill{display:none!important}
+.quick-sale-fab{
+  right:18px!important;
+  bottom:calc(28px + env(safe-area-inset-bottom))!important;
+  padding:11px 16px!important;
+  font-size:12px!important;
+}
+.panel,.target-v17-card,.v21-period-panel,.cloud-kpi,.cloud-record,
+.approval-card,.activity-item,.notification-item,.supervisor-filter{
+  border-radius:16px!important;
+}
+.v21-period-panel{padding:20px!important}
+.target-v17-ring .fg{
+  transition:stroke-dashoffset .7s cubic-bezier(.22,.61,.36,1),stroke .25s ease!important;
+}
+@media(max-width:900px){
+  .page-head{
+    padding-top:88px!important;
+    margin-bottom:22px!important;
+  }
+  .page-head h2{line-height:1.25!important}
+}
+@media(max-width:520px){
+  .account-menu-btn{
+    min-width:146px!important;
+    height:46px!important;
+  }
+  .account-user-icon{width:30px!important;height:30px!important}
+  .account-user-text strong{max-width:98px!important}
+  .mobile-menu-btn{width:46px!important;height:46px!important}
+  .page-head{padding-top:86px!important}
+  .v21-period-panel{padding:17px!important}
+  .quick-sale-fab{
+    right:16px!important;
+    bottom:calc(32px + env(safe-area-inset-bottom))!important;
+  }
+}
+@media(max-width:390px){
+  .account-menu-btn{min-width:136px!important;max-width:calc(100vw - 82px)!important}
+  .account-user-text strong{max-width:84px!important}
+}
+</style>
+
 </head>
 <body>
 <div id="cloud-loading" class="cloud-loading">جاري تجهيز لوحة DOT ALMASIAH…</div>
@@ -5104,13 +5200,29 @@ document.getElementById('sale-edit-save')?.addEventListener('click',async()=>{
 
 function updateSyncStatus(){
  const pill=document.getElementById('sync-status-pill'),text=document.getElementById('sync-status-text');
- if(!pill||!text)return;
+ const account=document.getElementById('account-menu-wrap');
+ const roleEl=document.getElementById('account-display-role');
  const sync=window.DOT_CLOUD?.state?.sync||{}, online=navigator.onLine;
- pill.classList.remove('offline','syncing');
- if(!online||sync.status==='offline'){pill.classList.add('offline');text.textContent='دون اتصال';return}
- if(sync.status==='syncing'){pill.classList.add('syncing');text.textContent='جاري المزامنة…';return}
+ if(pill)pill.classList.remove('offline','syncing');
+ if(account)account.classList.remove('offline','syncing');
+ const baseRole=window.DOT_CLOUD?.state?.profile?.role==='owner'?'المالك':'المشرف';
+ if(!online||sync.status==='offline'){
+   if(pill)pill.classList.add('offline');
+   if(account)account.classList.add('offline');
+   if(text)text.textContent='دون اتصال';
+   if(roleEl)roleEl.textContent=`${baseRole} · دون اتصال`;
+   return;
+ }
+ if(sync.status==='syncing'){
+   if(pill)pill.classList.add('syncing');
+   if(account)account.classList.add('syncing');
+   if(text)text.textContent='جاري المزامنة…';
+   if(roleEl)roleEl.textContent=`${baseRole} · مزامنة`;
+   return;
+ }
  const last=sync.lastSync?new Date(sync.lastSync):null;
- text.textContent=last&&!Number.isNaN(last.getTime())?`متصل · ${last.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'متصل';
+ if(text)text.textContent=last&&!Number.isNaN(last.getTime())?`متصل · ${last.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`:'متصل';
+ if(roleEl)roleEl.textContent=`${baseRole} · متصل`;
 }
 function updateQuickSaleButton(){
  const btn=document.getElementById('quick-sale-fab');if(!btn)return;
@@ -5129,7 +5241,7 @@ function updateAccountMenu(){
   const dropName=document.getElementById('account-dropdown-name');
   const dropEmail=document.getElementById('account-dropdown-email');
   if(nameEl)nameEl.textContent=name;
-  if(roleEl)roleEl.textContent=role;
+  if(roleEl)roleEl.textContent=`${role} · ${navigator.onLine?'متصل':'دون اتصال'}`;
   if(dropName)dropName.textContent=`${name} · ${role}`;
   if(dropEmail)dropEmail.textContent=email;
 }

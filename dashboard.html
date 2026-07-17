@@ -4558,13 +4558,13 @@ function reportMonthLabelV18(month){
   const m=String(month||'');
   if(!/^\d{4}-\d{2}$/.test(m)) return m||'—';
   const [y,mo]=m.split('-').map(Number);
-  try{return new Intl.DateTimeFormat('ar-SA-u-ca-gregory',{month:'long',year:'numeric'}).format(new Date(y,mo-1,1));}catch(e){return m;}
+  try{return new Intl.DateTimeFormat('en-US',{month:'short'}).format(new Date(y,mo-1,1));}catch(e){return m;}
 }
 function reportDateLabelV18(dateStr){
   if(!dateStr) return '—';
   const d=new Date(String(dateStr).slice(0,10)+'T12:00:00');
   if(isNaN(d)) return String(dateStr);
-  try{return new Intl.DateTimeFormat('ar-SA-u-ca-gregory',{day:'numeric',month:'long',year:'numeric'}).format(d);}catch(e){return String(dateStr);}
+  try{return new Intl.DateTimeFormat('en-US',{day:'numeric',month:'short'}).format(d);}catch(e){return String(dateStr);}
 }
 function reportPreviousMonthV18(month){
   const [y,m]=String(month).split('-').map(Number);
@@ -4891,7 +4891,7 @@ function v19PolishDashboard(main){
   if(title){
     const month=currentMonth(), locked=isMonthLocked(month);
     title.parentElement?.classList.add('v19-titlebox');
-    const todayGregorianV39=new Intl.DateTimeFormat('ar-SA-u-ca-gregory',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date()).replace('،',' •');
+    const todayGregorianV39=new Intl.DateTimeFormat('en-US',{weekday:'long',day:'numeric',month:'short'}).format(new Date()).replace('،',' •');
     title.outerHTML=`<div class="page-head-titleline"><h2>لوحة التحكم الرئيسية</h2><span class="v19-month-state v38-gregorian-date" aria-label="تاريخ اليوم الميلادي">${todayGregorianV39}</span></div>`;
   }
   const sub=main.querySelector('.page-head .sub');
@@ -5498,7 +5498,7 @@ function renderSupervisorHome(main){
   const stockPct=Math.max(5,Math.min(100,monthlyTarget?stock/monthlyTarget*100:50));
   const stockClass=stockDays!==null&&stockDays<=2?'danger':stockDays!==null&&stockDays<=5?'warn':'good';
   const stockText=stockDays===null?'لا تتوفر بيانات كافية لتقدير المدة':stockDays<=0?'المخزون يحتاج إعادة شحن':`يكفي تقريبًا ${stockDays} ${stockDays===1?'يوم':'أيام'}`;
-  const dateLabel=new Intl.DateTimeFormat('ar-SA-u-ca-gregory',{day:'numeric',month:'long',year:'numeric'}).format(now);
+  const dateLabel=new Intl.DateTimeFormat('en-US',{day:'numeric',month:'short'}).format(now);
 
   main.innerHTML=`<div class="sup-dashboard">
    <div class="sup-head">

@@ -1512,7 +1512,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45.5 السحابية</p>
+      <p>نسخة ERP v45.6 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1535,7 +1535,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45.5 · Approval Below Stock
+   DOT ALMASIAH — ERP v45.6 · Target Summary Cards
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -4363,9 +4363,68 @@ renderDashboard = function(main){
       .target-v17-stat .lbl,.target-v17-stat .val{width:100%;text-align:center;}
       .target-v17-stat.gold .val,.target-v17-stat.gold .sub strong{color:var(--gold-bright);}
       .target-v17-stat.good .val{color:var(--success);}
-      .target-v17-inline{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
-      .target-v17-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:rgba(201,162,75,.14);color:var(--gold-bright);font-size:11.5px;border:1px solid rgba(201,162,75,.25);}
-      .target-v17-toggle{font-size:12px;color:var(--text-dim);cursor:pointer;}
+      .target-v17-inline{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:10px;
+        margin-top:16px;
+        padding-top:14px;
+        border-top:1px solid var(--border);
+      }
+      .target-v17-summary-card{
+        width:100%;
+        min-height:116px;
+        box-sizing:border-box;
+        border:1px solid var(--border);
+        border-radius:17px;
+        background:var(--bg-elevated);
+        padding:14px 16px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+        gap:6px;
+        color:var(--text);
+      }
+      .target-v17-summary-card .lbl{
+        width:100%;
+        font-size:12px;
+        line-height:1.35;
+        color:var(--text-dim);
+        text-align:center;
+      }
+      .target-v17-summary-card .val{
+        width:100%;
+        font-family:var(--font-display);
+        font-size:26px;
+        line-height:1.12;
+        color:var(--text);
+        text-align:center;
+      }
+      .target-v17-summary-card .sub{
+        width:100%;
+        font-size:10.5px;
+        line-height:1.45;
+        color:var(--text-faint);
+        text-align:center;
+      }
+      .target-v17-summary-card.predicted .val{
+        color:var(--gold-bright);
+      }
+      .target-v17-summary-card.stock{
+        cursor:pointer;
+      }
+      .target-v17-summary-card.stock .val{
+        color:var(--text);
+      }
+      .target-v17-summary-card.stock:active{
+        transform:translateY(1px);
+      }
+      .target-v17-summary-card .details-hint{
+        color:var(--gold-bright);
+        font-size:10.5px;
+      }
       .target-v17-details{display:none;margin-top:14px;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
       .target-v17-details.show{display:grid;}
       .target-v17-details .target-v17-stat{min-height:74px;}
@@ -4437,9 +4496,17 @@ renderDashboard = function(main){
             <div class="target-v17-stat"><div class="lbl">المطلوب يوميًا حتى آخر الشهر</div><div class="val">${neededDaily.toLocaleString('en-US')}</div><div class="sub">متوسط الماسات المطلوبة يوميًا إذا لم يتحقق الهدف بعد.</div></div>
           </div>
           <div class="target-v17-inline">
-            <span class="target-v17-badge">المتوقع نهاية الشهر: ${predicted.toLocaleString('en-US')} ماسة</span>
-            <span class="target-v17-badge">المخزون الحالي: ${currentStockV18().toLocaleString('en-US')} ماسة</span>
-            <button class="btn sm" id="toggle-target-details">تفاصيل أكثر</button>
+            <div class="target-v17-summary-card predicted">
+              <div class="lbl">المتوقع نهاية الشهر</div>
+              <div class="val">${predicted.toLocaleString('en-US')} ماسة</div>
+              <div class="sub">التوقع بناءً على متوسط البيع المسجل حتى اليوم.</div>
+            </div>
+            <button type="button" class="target-v17-summary-card stock" id="toggle-target-details" aria-expanded="false">
+              <div class="lbl">المخزون الحالي</div>
+              <div class="val">${currentStockV18().toLocaleString('en-US')} ماسة</div>
+              <div class="sub">الرصيد التقديري بعد آخر قيد.</div>
+              <div class="details-hint">اضغط لعرض التفاصيل</div>
+            </button>
           </div>
           <div class="target-v17-details" id="target-v17-details">
             <div class="target-v17-stat"><div class="lbl">عدد أيام الشهر</div><div class="val">${days.toLocaleString('en-US')}</div><div class="sub">إجمالي أيام الشهر المحدد.</div></div>
@@ -4456,10 +4523,14 @@ renderDashboard = function(main){
       logAudit('تحديث هدف الألماس الشهري', {monthlyDiamondTarget: next.monthlyDiamondTarget});
       render();
     });
-    document.getElementById('toggle-target-details')?.addEventListener('click', ()=>{
+    document.getElementById('toggle-target-details')?.addEventListener('click', (event)=>{
       const box=document.getElementById('target-v17-details');
-      if(!box) return;
-      box.classList.toggle('show');
+      const button=event.currentTarget;
+      if(!box||!button) return;
+      const opened=box.classList.toggle('show');
+      button.setAttribute('aria-expanded', String(opened));
+      const hint=button.querySelector('.details-hint');
+      if(hint) hint.textContent=opened?'اضغط لإخفاء التفاصيل':'اضغط لعرض التفاصيل';
     });
   }
 

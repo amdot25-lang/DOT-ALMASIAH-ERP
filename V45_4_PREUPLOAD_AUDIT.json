@@ -1,0 +1,31 @@
+{
+  "release": "v45.4",
+  "scope": "monthly target centering and pending card full-width alignment",
+  "changed_runtime_files": [
+    "dashboard.html"
+  ],
+  "checks": {
+    "monthly_cards_centered": true,
+    "monthly_text_centered": true,
+    "pending_full_width": true,
+    "pending_style_preserved": true,
+    "pending_click_preserved": true,
+    "total_profit_full_width": true,
+    "two_columns_preserved": true,
+    "bottom_clearance_preserved": true,
+    "firestore_preserved": true
+  },
+  "inline_javascript_blocks_checked": 2,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "cloud-bridge.js",
+    "firestore.rules",
+    "firebase-config.js",
+    "app.js",
+    "legacy-dashboard.html"
+  ],
+  "calculation_logic_changed": false,
+  "firestore_changed": false,
+  "supervisor_dashboard_changed": false
+}

@@ -1385,6 +1385,8 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 /* v45.3 — Pending approval uses the same card component and grid rhythm. */
 .dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card{
   cursor:pointer;
+  grid-column:1 / -1 !important;
+  min-height:126px;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .label,
 .dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .value{
@@ -1424,6 +1426,9 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
   }
   .dashboard-v19 .owner-card-grid-v45 > .card:last-child{
     min-height:126px;
+  }
+  .dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card{
+    min-height:116px;
   }
 }
 @media (max-width:370px){
@@ -1495,7 +1500,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45.3 السحابية</p>
+      <p>نسخة ERP v45.4 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1518,7 +1523,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45.3 · Unified Approval Card
+   DOT ALMASIAH — ERP v45.4 · Alignment Fix
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -4328,10 +4333,22 @@ renderDashboard = function(main){
       .target-v17-center .cap{font-size:12px;color:var(--text-dim);margin-top:6px;}
       .target-v17-center .small{font-size:11px;color:var(--text-faint);margin-top:8px;}
       .target-v17-mainstat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-      .target-v17-stat{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:14px 15px;min-height:88px;}
+      .target-v17-stat{
+        background:var(--bg-elevated);
+        border:1px solid var(--border);
+        border-radius:12px;
+        padding:14px 15px;
+        min-height:88px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+      }
       .target-v17-stat .lbl{font-size:11px;color:var(--text-dim);margin-bottom:8px;}
       .target-v17-stat .val{font-family:var(--font-display);font-size:24px;color:var(--text);line-height:1.1;}
-      .target-v17-stat .sub{font-size:10.5px;color:var(--text-faint);margin-top:6px;line-height:1.5;}
+      .target-v17-stat .sub{font-size:10.5px;color:var(--text-faint);margin-top:6px;line-height:1.5;width:100%;text-align:center;}
+      .target-v17-stat .lbl,.target-v17-stat .val{width:100%;text-align:center;}
       .target-v17-stat.gold .val,.target-v17-stat.gold .sub strong{color:var(--gold-bright);}
       .target-v17-stat.good .val{color:var(--success);}
       .target-v17-inline{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}

@@ -1911,71 +1911,6 @@ function bindPeriodBar(onApply){
 /* =========================================================
    DASHBOARD
    ========================================================= */
-function renderDashboard(main){
-  const {from,to} = computePeriodRange();
-  const series = getStoreSeries();
-  const storeRows = series.filter(e=>dateInRange(e.date, from, to));
-  const bcRows = loadT(DB.broadcast).filter(b=>monthInRange(b.month, from, to));
-
-  const sales = storeRows.reduce((a,e)=>a+num(e.salesIncl),0);
-  const cogs = storeRows.reduce((a,e)=>a+num(e.cogs),0);
-  const expenses = storeRows.reduce((a,e)=>a+storeExpenses(e),0);
-  const storeProfit = storeRows.reduce((a,e)=>a+e.netProfit,0);
-  const margin = sales? storeProfit/sales : 0;
-
-  // في نسخة الإنقاذ: ربح وكالة المذيعين = عمولة الوكالة فقط، وليس راتب المذيع ولا إجمالي الملف.
-  const bcSalary = bcRows.reduce((a,b)=>a+computeBroadcaster(b).salarySAR,0);
-  const bcProfit = bcRows.reduce((a,b)=>a+computeBroadcaster(b).commissionSAR,0);
-  const bcTotal = bcSalary + bcProfit;
-  const grand = storeProfit + bcProfit;
-
-  main.innerHTML = `
-    <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — نسخة ERP v36 الاحترافية</div></div>
-      <div class="flex gap">
-        <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
-        <button class="btn ${isMonthLocked(currentMonth())?'danger':'primary'}" id="dash-lock">${isMonthLocked(currentMonth())?'فك إغلاق الشهر':'إغلاق الشهر'}</button>
-      </div>
-    </div>
-    ${periodFilterBar()}
-
-    <div class="cards">
-      <div class="card"><div class="label">مبيعات المتجر</div><div class="value">${sar(sales)}</div><div class="foot">شامل الضريبة</div></div>
-      <div class="card"><div class="label">تكلفة الألماس المباع</div><div class="value">${sar(cogs)}</div><div class="foot">بدون ضريبة · حسب متوسط التكلفة المعتمد</div></div>
-      <div class="card"><div class="label">مصروفات التشغيل</div><div class="value">${sar(expenses)}</div><div class="foot">شامل الضريبة · الربح يخصم الصافي حسب نوع الضريبة</div></div>
-      <div class="card accent"><div class="label">صافي ربح المتجر</div><div class="value ${storeProfit>=0?'pos':'neg'}">${sar(storeProfit)}</div><div class="foot">هامش الربح: ${pct(margin)}</div></div>
-      <div class="card"><div class="label">رواتب المذيعين</div><div class="value">${sar(bcSalary)}</div><div class="foot">مصروف/مستحق للمذيعين — لا يدخل ضمن الربح</div></div>
-      <div class="card"><div class="label">ربح وكالة المذيعين</div><div class="value gold">${sar(bcProfit)}</div><div class="foot">عمولة الوكالة فقط · ${ar(bcRows.length)} سجل</div></div>
-      <div class="card accent"><div class="label">الربح الإجمالي</div><div class="value ${grand>=0?'pos':'neg'}">${sar(grand)}</div><div class="foot">صافي ربح المتجر + ربح وكالة المذيعين</div></div>
-      <div class="card"><div class="label">إجمالي ملف المذيعين</div><div class="value">${sar(bcTotal)}</div><div class="foot">راتب المذيع + عمولة الوكالة</div></div>
-    </div>
-
-    <div class="alert ok">تم عزل أرباح وكالة المذيعين عن المتجر. لا يتم استخدام إجمالي رواتب المذيعين في الربح الشامل، وإنما عمولة الوكالة فقط.</div>
-
-    <div class="panel">
-      <h3>أداء الأشهر (صافي ربح المتجر)</h3>
-      <div id="dash-chart"></div>
-    </div>
-
-    <div class="panel">
-      <h3>ملخص الفترة المحددة</h3>
-      <table>
-        <thead><tr><th>البند</th><th>القيمة</th></tr></thead>
-        <tbody>
-          <tr><td>عدد سجلات المتجر</td><td>${ar(storeRows.length)}</td></tr>
-          <tr><td>عدد سجلات المذيعين</td><td>${ar(bcRows.length)}</td></tr>
-          <tr><td>الفترة</td><td>${from||'—'} إلى ${to||'—'}</td></tr>
-        </tbody>
-      </table>
-    </div>
-  `;
-  bindPeriodBar();
-  const wl = document.getElementById('dash-whatsapp');
-  if(wl) wl.addEventListener('click', ()=>openWhatsappReport(currentMonth()));
-  const lb = document.getElementById('dash-lock');
-  if(lb) lb.addEventListener('click', ()=>{ const m=currentMonth(); setMonthLock(m, !isMonthLocked(m)); alert((isMonthLocked(m)?'تم إغلاق ':'تم فك إغلاق ')+m); render(); });
-  renderMonthlyChart(document.getElementById('dash-chart'));
-}
 
 function renderMonthlyChart(container){
   const series = getStoreSeries();
@@ -2169,188 +2104,6 @@ function downloadFile(filename, content, mime){
 /* =========================================================
    BROADCASTERS MODULE
    ========================================================= */
-function renderBroadcasters(main){
-  const all = loadT(DB.broadcast).sort((a,b)=> (b.month||'').localeCompare(a.month||'') || canonicalBroadcaster(a).name.localeCompare(canonicalBroadcaster(b).name));
-  const settings = loadSettings();
-  const calcRows = all.map(r=>{ const c=computeBroadcaster(r); c._canonical=canonicalBroadcaster(c); return c; });
-  const totalSalaryUSD = calcRows.reduce((a,b)=>a+b.salaryUSD,0);
-  const totalCommissionUSD = calcRows.reduce((a,b)=>a+b.commissionUSD,0);
-  const totalUSD = calcRows.reduce((a,b)=>a+b.totalUSD,0);
-  const totalSalarySAR = calcRows.reduce((a,b)=>a+b.salarySAR,0);
-  const totalCommissionSAR = calcRows.reduce((a,b)=>a+b.commissionSAR,0);
-  const totalSAR = calcRows.reduce((a,b)=>a+b.totalSAR,0);
-  const moneySAR = n => `${sar(n)} ر.س`;
-  const moneyUSD = n => `$${sar(n)}`;
-
-  const byMonth = groupBy(calcRows, b=>b.month||'—');
-  const monthRows = Object.keys(byMonth).sort().reverse().map(m=>{
-    const rows=byMonth[m];
-    return {month:m, rows:rows.length, broadcasters:new Set(rows.map(r=>r._canonical.key)).size,
-      salaryUSD:rows.reduce((a,r)=>a+r.salaryUSD,0), commissionUSD:rows.reduce((a,r)=>a+r.commissionUSD,0), totalUSD:rows.reduce((a,r)=>a+r.totalUSD,0),
-      salarySAR:rows.reduce((a,r)=>a+r.salarySAR,0), commissionSAR:rows.reduce((a,r)=>a+r.commissionSAR,0), totalSAR:rows.reduce((a,r)=>a+r.totalSAR,0)};
-  });
-
-  const byYear = groupBy(calcRows, b=>(b.month||'—').slice(0,4));
-  const yearRows = Object.keys(byYear).sort().reverse().map(y=>{
-    const rows=byYear[y];
-    return {year:y, rows:rows.length, broadcasters:new Set(rows.map(r=>r._canonical.key)).size,
-      salaryUSD:rows.reduce((a,r)=>a+r.salaryUSD,0), commissionUSD:rows.reduce((a,r)=>a+r.commissionUSD,0), totalUSD:rows.reduce((a,r)=>a+r.totalUSD,0),
-      salarySAR:rows.reduce((a,r)=>a+r.salarySAR,0), commissionSAR:rows.reduce((a,r)=>a+r.commissionSAR,0), totalSAR:rows.reduce((a,r)=>a+r.totalSAR,0)};
-  });
-
-  function buildBroadcasterRanking(rows){
-    const byCanonical = groupBy(rows, b=>b._canonical.key);
-    return Object.keys(byCanonical).map(key=>{
-      const subRows=byCanonical[key];
-      const info = subRows[0]._canonical;
-      const ids=[...new Set(subRows.map(r=>r.bigoId || r.uid).filter(Boolean))].join(' / ');
-      const bestByAgency = subRows.slice().sort((a,b)=>b.commissionSAR-a.commissionSAR)[0];
-      const bestBySalary = subRows.slice().sort((a,b)=>b.salarySAR-a.salarySAR)[0];
-      const bestByTotal = subRows.slice().sort((a,b)=>b.totalSAR-a.totalSAR)[0];
-      return {key, name:info.name, bigoId:ids||info.ids, rows:subRows.length, months:new Set(subRows.map(r=>r.month)).size,
-        bestMonth:(bestByAgency?.month || ''), bestSalaryMonth:(bestBySalary?.month || ''), bestTotalMonth:(bestByTotal?.month || ''),
-        salaryUSD:subRows.reduce((a,r)=>a+r.salaryUSD,0), commissionUSD:subRows.reduce((a,r)=>a+r.commissionUSD,0), totalUSD:subRows.reduce((a,r)=>a+r.totalUSD,0),
-        salarySAR:subRows.reduce((a,r)=>a+r.salarySAR,0), commissionSAR:subRows.reduce((a,r)=>a+r.commissionSAR,0), totalSAR:subRows.reduce((a,r)=>a+r.totalSAR,0)};
-    });
-  }
-
-  const rankRows = buildBroadcasterRanking(calcRows).sort((a,b)=>b.commissionSAR-a.commissionSAR);
-
-  const availableYears = [...new Set(calcRows.map(r=>(r.month||'').slice(0,4)).filter(Boolean))].sort().reverse();
-  const availableMonths = [...new Set(calcRows.map(r=>r.month).filter(Boolean))].sort().reverse();
-  if(!app.bcCardYear || !availableYears.includes(app.bcCardYear)) app.bcCardYear = availableYears[0] || '';
-  if(!app.bcCardMonth || !availableMonths.includes(app.bcCardMonth)) app.bcCardMonth = availableMonths[0] || '';
-  const cardMode = app.bcCardMode || 'total';
-  const cardMetric = app.bcCardMetric || 'salary';
-  const cardRowsSource = calcRows.filter(r=>{
-    if(cardMode==='year') return String(r.month||'').slice(0,4) === app.bcCardYear;
-    if(cardMode==='month') return r.month === app.bcCardMonth;
-    return true;
-  });
-  const metricKey = cardMetric === 'commission' ? 'commissionSAR' : (cardMetric === 'total' ? 'totalSAR' : 'salarySAR');
-  const metricUSDKey = cardMetric === 'commission' ? 'commissionUSD' : (cardMetric === 'total' ? 'totalUSD' : 'salaryUSD');
-  const metricLabel = cardMetric === 'commission' ? 'ربح الوكالة' : (cardMetric === 'total' ? 'الإجمالي' : 'دخل المذيع');
-  const scopeLabel = cardMode === 'year' ? `سنة ${app.bcCardYear || '—'}` : (cardMode === 'month' ? `شهر ${app.bcCardMonth || '—'}` : 'الإجمالي التاريخي');
-  const incomeCards = buildBroadcasterRanking(cardRowsSource).sort((a,b)=>b[metricKey]-a[metricKey]).slice(0,10);
-
-  main.innerHTML = `
-    <div class="page-head">
-      <div><h2>وكالة المذيعين</h2><div class="sub">تفاصيل تاريخية كاملة + دمج الآيديات تحت مذيع واحد في التقارير والترتيب</div></div>
-      <div class="flex gap"><button class="btn" id="manage-aliases">دمج آيديات مذيع</button><button class="btn primary" id="add-bc">+ إضافة مذيع</button></div>
-    </div>
-    <div class="cards">
-      <div class="card"><div class="label">رواتب المذيعين</div><div class="value amount-main">${moneySAR(totalSalarySAR)}</div><div class="foot amount-sub"><b>${moneyUSD(totalSalaryUSD)}</b></div></div>
-      <div class="card accent"><div class="label">عمولة الوكالة</div><div class="value gold amount-main">${moneySAR(totalCommissionSAR)}</div><div class="foot amount-sub"><b>${moneyUSD(totalCommissionUSD)}</b> — هذا هو ربح الوكالة</div></div>
-      <div class="card"><div class="label">الإجمالي</div><div class="value amount-main">${moneySAR(totalSAR)}</div><div class="foot amount-sub"><b>${moneyUSD(totalUSD)}</b></div></div>
-      <div class="card"><div class="label">عدد السجلات</div><div class="value">${ar(all.length)}</div><div class="foot">عدد المذيعين بعد الدمج: ${ar(rankRows.length)} · سعر الصرف ${rateFmt(settings.defaultExchangeRate)}</div></div>
-    </div>
-
-    <div class="panel soft">
-      <div class="panel-head"><div><h3>بطاقات أفضل 10 مذيعين</h3><div class="table-note">الرقم الكبير بالريال، وتحته الدولار للمراجعة. يمكنك تغيير العرض بين الإجمالي التاريخي أو سنة محددة أو شهر محدد.</div><div class="broadcaster-card-meta">العرض الحالي: ${scopeLabel} · الترتيب حسب ${metricLabel}</div></div></div>
-      <div class="filterbar broadcaster-card-controls">
-        <div class="field"><label>نطاق البطاقات</label><select id="bc-card-mode">
-          <option value="total" ${cardMode==='total'?'selected':''}>الإجمالي التاريخي</option>
-          <option value="year" ${cardMode==='year'?'selected':''}>سنة محددة</option>
-          <option value="month" ${cardMode==='month'?'selected':''}>شهر محدد</option>
-        </select></div>
-        <div class="field"><label>السنة</label><select id="bc-card-year">
-          ${availableYears.map(y=>`<option value="${y}" ${app.bcCardYear===y?'selected':''}>${y}</option>`).join('')}
-        </select></div>
-        <div class="field"><label>الشهر</label><select id="bc-card-month">
-          ${availableMonths.map(m=>`<option value="${m}" ${app.bcCardMonth===m?'selected':''}>${m}</option>`).join('')}
-        </select></div>
-        <div class="field"><label>أساس الترتيب</label><select id="bc-card-metric">
-          <option value="salary" ${cardMetric==='salary'?'selected':''}>دخل المذيع</option>
-          <option value="commission" ${cardMetric==='commission'?'selected':''}>ربح الوكالة</option>
-          <option value="total" ${cardMetric==='total'?'selected':''}>الإجمالي</option>
-        </select></div>
-      </div>
-      <div class="broadcaster-hero-grid">
-        ${incomeCards.length?incomeCards.map((r,i)=>`
-          <div class="broadcaster-hero-card">
-            <div class="rank">${i+1}</div>
-            <div class="name">${r.name}</div>
-            <div class="ids">${r.bigoId || '—'}</div>
-            <div class="primary-income">${moneySAR(r[metricKey])} <small>${metricLabel}</small></div>
-            <div class="scope-line">${scopeLabel}</div>
-            <div class="mini-stats">
-              <div class="mini-stat"><div class="lbl">بالدولار</div><div class="val">${moneyUSD(r[metricUSDKey])}</div></div>
-              <div class="mini-stat"><div class="lbl">دخل المذيع</div><div class="val">${moneySAR(r.salarySAR)}</div></div>
-              <div class="mini-stat"><div class="lbl">ربح الوكالة</div><div class="val">${moneySAR(r.commissionSAR)}</div></div>
-              <div class="mini-stat"><div class="lbl">أفضل شهر</div><div class="val">${r.bestSalaryMonth || r.bestMonth || r.bestTotalMonth || '—'}</div></div>
-              <div class="mini-stat"><div class="lbl">الأشهر / الصفوف</div><div class="val">${r.months} / ${r.rows}</div></div>
-              <div class="mini-stat"><div class="lbl">الإجمالي</div><div class="val">${moneySAR(r.totalSAR)}</div></div>
-            </div>
-          </div>`).join(''):`<div class="empty">لا توجد بيانات لهذا النطاق</div>`}
-      </div>
-    </div>
-
-    <div class="alert ok">ميزة الدمج لا تغيّر السجلات الأصلية؛ فقط تجمع الآيديات المرتبطة تحت اسم مذيع واحد في البطاقات والترتيب والتقارير.</div>
-
-    <div class="panel">
-      <div class="panel-head"><h3>ترتيب المذيعين حسب ربح الوكالة</h3><button class="btn sm" id="export-bc-csv">تصدير كل السجلات CSV</button></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>المذيع</th><th>BIGO IDs المدمجة</th><th>الأشهر</th><th>الصفوف</th><th>أفضل شهر</th><th>رواتب ر.س</th><th>رواتب $</th><th>عمولة الوكالة ر.س</th><th>عمولة الوكالة $</th><th>الإجمالي ر.س</th></tr></thead>
-        <tbody>${rankRows.length?rankRows.slice(0,120).map((r,i)=>`<tr><td>${i+1}</td><td>${r.name}</td><td>${r.bigoId||''}</td><td>${r.months}</td><td>${r.rows}</td><td>${r.bestMonth}</td><td>${moneySAR(r.salarySAR)}</td><td>${moneyUSD(r.salaryUSD)}</td><td style="color:var(--gold-bright);font-weight:700;">${moneySAR(r.commissionSAR)}</td><td style="color:var(--gold-bright);font-weight:700;">${moneyUSD(r.commissionUSD)}</td><td>${moneySAR(r.totalSAR)}</td></tr>`).join(''):`<tr><td colspan="11"><div class="empty">لا توجد بيانات</div></td></tr>`}</tbody>
-      </table></div>
-    </div>
-
-    <div class="panel">
-      <h3>أداء المذيعين حسب الأشهر</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>الشهر</th><th>المذيعين بعد الدمج</th><th>الصفوف</th><th>رواتب ر.س</th><th>رواتب $</th><th>عمولة الوكالة ر.س</th><th>عمولة الوكالة $</th><th>الإجمالي ر.س</th><th>الإجمالي $</th></tr></thead>
-        <tbody>${monthRows.length?monthRows.map(r=>`<tr><td>${r.month}</td><td>${r.broadcasters}</td><td>${r.rows}</td><td>${moneySAR(r.salarySAR)}</td><td>${moneyUSD(r.salaryUSD)}</td><td style="color:var(--gold-bright);font-weight:700;">${moneySAR(r.commissionSAR)}</td><td style="color:var(--gold-bright);font-weight:700;">${moneyUSD(r.commissionUSD)}</td><td>${moneySAR(r.totalSAR)}</td><td>${moneyUSD(r.totalUSD)}</td></tr>`).join(''):`<tr><td colspan="9"><div class="empty">لا توجد بيانات</div></td></tr>`}</tbody>
-      </table></div>
-    </div>
-
-    <div class="panel">
-      <h3>أداء المذيعين حسب السنوات</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>السنة</th><th>المذيعين بعد الدمج</th><th>الصفوف</th><th>رواتب ر.س</th><th>رواتب $</th><th>عمولة الوكالة ر.س</th><th>عمولة الوكالة $</th><th>الإجمالي ر.س</th><th>الإجمالي $</th></tr></thead>
-        <tbody>${yearRows.length?yearRows.map(r=>`<tr><td>${r.year}</td><td>${r.broadcasters}</td><td>${r.rows}</td><td>${moneySAR(r.salarySAR)}</td><td>${moneyUSD(r.salaryUSD)}</td><td style="color:var(--gold-bright);font-weight:700;">${moneySAR(r.commissionSAR)}</td><td style="color:var(--gold-bright);font-weight:700;">${moneyUSD(r.commissionUSD)}</td><td>${moneySAR(r.totalSAR)}</td><td>${moneyUSD(r.totalUSD)}</td></tr>`).join(''):`<tr><td colspan="9"><div class="empty">لا توجد بيانات</div></td></tr>`}</tbody>
-      </table></div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head"><h3>كل سجلات المذيعين التفصيلية</h3><div class="small">السجلات الأصلية لا تتغير؛ الدمج يظهر في التقارير فقط.</div></div>
-      <div class="table-wrap"><table>
-        <thead><tr>
-          <th>الشهر</th><th>المذيع</th><th>مجموعة الدمج</th><th>BIGO ID</th><th>UID</th><th>راتب ر.س</th><th>راتب $</th><th>عمولة ر.س</th><th>عمولة $</th><th>إجمالي ر.س</th><th>إجمالي $</th>
-          <th>سعر الصرف</th><th>الحالة</th><th></th>
-        </tr></thead>
-        <tbody>
-        ${all.length? all.map(r=>{ const c = computeBroadcaster(r); const ci=canonicalBroadcaster(r); return `
-          <tr>
-            <td>${r.month||''}</td><td>${r.broadcasterName||''}</td><td>${ci.name||''}</td><td>${r.bigoId||''}</td><td>${r.uid||''}</td>
-            <td>${moneySAR(c.salarySAR)}</td><td>${moneyUSD(r.salaryUSD)}</td><td style="color:var(--gold-bright);font-weight:600;">${moneySAR(c.commissionSAR)}</td><td>${moneyUSD(r.commissionUSD)}</td><td>${moneySAR(c.totalSAR)}</td><td>${moneyUSD(c.totalUSD)}</td>
-            <td>${rateFmt(c.exchangeRate)}</td>
-            <td><span class="tag ${r.status||'manual'}">${statusLabel(r.status)}</span></td>
-            <td><div class="row-actions">
-              <button class="icon-btn edit-bc" data-id="${r.id}">✎</button>
-              <button class="icon-btn del del-bc" data-id="${r.id}">🗑</button>
-            </div></td>
-          </tr>`;}).join('') : `<tr><td colspan="14"><div class="empty">لا توجد سجلات بعد</div></td></tr>`}
-        </tbody>
-      </table></div>
-    </div>
-  `;
-  ['bc-card-mode','bc-card-year','bc-card-month','bc-card-metric'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('change', ()=>{
-      app.bcCardMode=document.getElementById('bc-card-mode')?.value || 'total';
-      app.bcCardYear=document.getElementById('bc-card-year')?.value || '';
-      app.bcCardMonth=document.getElementById('bc-card-month')?.value || '';
-      app.bcCardMetric=document.getElementById('bc-card-metric')?.value || 'salary';
-      render();
-    });
-  });
-  document.getElementById('add-bc').addEventListener('click', ()=>openBcForm());
-  document.getElementById('manage-aliases').addEventListener('click', ()=>openAliasManager());
-  document.getElementById('export-bc-csv').addEventListener('click', ()=>exportBcCSV(all));
-  $$('.edit-bc').forEach(b=>b.addEventListener('click',()=>openBcForm(b.dataset.id)));
-  $$('.del-bc').forEach(b=>b.addEventListener('click',()=>deleteBc(b.dataset.id)));
-}
 
 function openAliasManager(){
   const groups = loadAliases();
@@ -4868,43 +4621,14 @@ function v20AliasGroupForIdentity(x,groups=loadAliases()){
   const tokens=v20IdentityTokens(x);
   return groups.find(g=>aliasValues(g).some(v=>tokens.includes(v)))||null;
 }
-function v20PrimaryName(items){
-  const scores=new Map();
-  items.forEach(x=>{
-    const n=String(x.name||'').trim(); if(!n)return;
-    let score=num(x.rows)*10 + (x.lastMonth?Number(x.lastMonth.replace('-',''))/100000:0);
-    if(normKey(n)!==normKey(x.bigoId)&&normKey(n)!==normKey(x.uid)) score+=7;
-    scores.set(n,(scores.get(n)||0)+score);
-  });
-  return [...scores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || items[0]?.name || items[0]?.bigoId || items[0]?.uid || 'مذيع';
-}
+
 function v20SuggestionMetrics(items){
   const ids=new Set(items.flatMap(x=>x.recordIds||[])), months=new Set();
   let salary=0,commission=0,total=0;
   loadT(DB.broadcast).forEach(r=>{if(ids.has(r.id)){const c=computeBroadcaster(r);salary+=num(c.salarySAR);commission+=num(c.commissionSAR);total+=num(c.totalSAR);if(r.month)months.add(r.month);}});
   return {rows:ids.size,months:months.size,salary,commission,total};
 }
-function v20BuildSuggestions(identities=v20IdentityRows()){
-  const groups=loadAliases(), suggestions=[], seen=new Set();
-  function add(items,reason,confidence,matchValue){
-    items=[...new Map(items.map(x=>[x.key,x])).values()];
-    if(items.length<2)return;
-    const groupIds=new Set(items.map(x=>v20AliasGroupForIdentity(x,groups)?.id||'').filter(Boolean));
-    if(groupIds.size===1 && items.every(x=>v20AliasGroupForIdentity(x,groups))) return;
-    const sig=items.map(x=>x.key).sort().join('||'); if(seen.has(sig))return; seen.add(sig);
-    suggestions.push({id:'s'+suggestions.length,items,reason,confidence,matchValue,name:v20PrimaryName(items),metrics:v20SuggestionMetrics(items)});
-  }
-  const byUid=new Map(), byId=new Map(), byName=new Map();
-  identities.forEach(x=>{
-    if(x.uid){const k=normKey(x.uid);if(!byUid.has(k))byUid.set(k,[]);byUid.get(k).push(x);}
-    if(x.bigoId){const k=normKey(x.bigoId);if(!byId.has(k))byId.set(k,[]);byId.get(k).push(x);}
-    if(x.name && String(x.name).trim().length>=3){const k=normKey(x.name);if(!byName.has(k))byName.set(k,[]);byName.get(k).push(x);}
-  });
-  byUid.forEach((items,k)=>{if(new Set(items.map(x=>normKey(x.bigoId||x.name))).size>1)add(items,'تطابق UID نفسه','safe',k);});
-  byId.forEach((items,k)=>{if(new Set(items.map(x=>normKey(x.name||x.uid))).size>1)add(items,'تطابق BIGO ID نفسه','safe',k);});
-  byName.forEach((items,k)=>{if(new Set(items.map(x=>normKey(x.bigoId||x.uid))).size>1)add(items,'الاسم نفسه ظهر بمعرفات مختلفة','review',k);});
-  return suggestions.sort((a,b)=>(a.confidence===b.confidence?b.metrics.rows-a.metrics.rows:(a.confidence==='safe'?-1:1)));
-}
+
 function v20SelectedIdentities(){
   const keys=window.__v20AliasSelected||new Set();
   const map=new Map(v20IdentityRows().map(x=>[x.key,x]));
@@ -5027,14 +4751,7 @@ v20IdentityRows=function(){
   }).sort((a,b)=>String(b.lastMonth).localeCompare(String(a.lastMonth))||b.rows-a.rows||a.name.localeCompare(b.name,'ar'));
 };
 v20IdentityTokens=function(x){return v20Unique([x.name,x.bigoId,x.uid,...(x.names||[]),...(x.uids||[])]).map(normKey);};
-v20PrimaryName=function(items){
-  const scores=new Map();
-  items.forEach(x=>{
-    const candidates=v20Unique([x.name,...(x.names||[])]).filter(v20MeaningfulName);
-    candidates.forEach((n,i)=>{let score=num(x.rows)*10-i*2;if(normKey(n)!==normKey(x.bigoId)&&!(x.uids||[]).some(u=>normKey(u)===normKey(n)))score+=7;if(n===x.latestName)score+=5;scores.set(n,(scores.get(n)||0)+score);});
-  });
-  return [...scores.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||items[0]?.bigoId||items[0]?.uid||'مذيع';
-};
+
 v20BuildSuggestions=function(identities=v20IdentityRows()){
   const groups=loadAliases(),suggestions=[],seen=new Set();
   function add(items,reason,confidence,matchValue){

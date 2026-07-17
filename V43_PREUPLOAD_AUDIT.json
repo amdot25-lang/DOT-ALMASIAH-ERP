@@ -1,0 +1,76 @@
+{
+  "release": "v43",
+  "scope": "internal dead-code cleanup only",
+  "shape_before": {
+    "renderDashboard_decl": 2,
+    "renderDashboard_assign": 5,
+    "renderBroadcasters_decl": 2,
+    "renderBroadcasters_assign": 2,
+    "v20BuildSuggestions_decl": 1,
+    "v20BuildSuggestions_assign": 1,
+    "v20PrimaryName_decl": 1,
+    "v20PrimaryName_assign": 2,
+    "v20SuggestionMetrics_decl": 1
+  },
+  "shape_after": {
+    "renderDashboard_decl": 1,
+    "renderDashboard_assign": 5,
+    "renderBroadcasters_decl": 1,
+    "renderBroadcasters_assign": 2,
+    "v20BuildSuggestions_decl": 0,
+    "v20BuildSuggestions_assign": 1,
+    "v20PrimaryName_decl": 0,
+    "v20PrimaryName_assign": 1,
+    "v20SuggestionMetrics_decl": 1
+  },
+  "removed_blocks": [
+    {
+      "label": "first unreachable renderDashboard declaration",
+      "characters": 4012,
+      "lines": 66
+    },
+    {
+      "label": "first unreachable renderBroadcasters declaration",
+      "characters": 14339,
+      "lines": 183
+    },
+    {
+      "label": "superseded v20PrimaryName declaration",
+      "characters": 481,
+      "lines": 10
+    },
+    {
+      "label": "superseded v20BuildSuggestions declaration",
+      "characters": 1638,
+      "lines": 21
+    },
+    {
+      "label": "superseded first v20PrimaryName reassignment",
+      "characters": 500,
+      "lines": 8
+    }
+  ],
+  "size": {
+    "before_bytes": 446808,
+    "after_bytes": 423937,
+    "saved_bytes": 22871,
+    "before_lines": 5689,
+    "after_lines": 5406,
+    "saved_lines": 283,
+    "reduction_percent": 5.1188
+  },
+  "javascript_blocks_checked": 2,
+  "historical_json_valid": true,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "firebase-config.js",
+    "firestore.rules",
+    "app.js"
+  ],
+  "deferred": [
+    "Broadcaster Firestore migration",
+    "legacy-dashboard.html cloud modernization",
+    "Splitting dashboard.html into modules"
+  ]
+}

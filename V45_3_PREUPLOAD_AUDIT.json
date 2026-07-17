@@ -1,0 +1,31 @@
+{
+  "release": "v45.3",
+  "scope": "unify pending approval card with owner KPI cards",
+  "changed_runtime_files": [
+    "dashboard.html"
+  ],
+  "checks": {
+    "pending_is_grid_card": true,
+    "pending_inserted_before_total": true,
+    "pending_click_route": true,
+    "purple_text_only": true,
+    "old_special_card_removed": true,
+    "centered_cards_preserved": true,
+    "two_columns_preserved": true,
+    "bottom_clearance_preserved": true,
+    "firestore_preserved": true
+  },
+  "inline_javascript_blocks_checked": 2,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "cloud-bridge.js",
+    "firestore.rules",
+    "firebase-config.js",
+    "app.js",
+    "legacy-dashboard.html"
+  ],
+  "calculation_logic_changed": false,
+  "firestore_changed": false,
+  "supervisor_dashboard_changed": false
+}

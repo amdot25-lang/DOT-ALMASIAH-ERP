@@ -1382,66 +1382,18 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
   grid-column:1 / -1 !important;
 }
 
-/* Owner pending-approval action card. */
-.dashboard-v19 .v451-pending-approval{
-  width:100%;
-  border:1px solid rgba(155,103,255,.38);
-  background:
-    radial-gradient(circle at 12% 50%,rgba(126,72,220,.14),transparent 34%),
-    linear-gradient(135deg,rgba(26,21,39,.97),rgba(17,18,22,.98));
-  border-radius:20px;
-  padding:15px 17px;
-  margin:14px 0;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  color:var(--text);
-  text-align:right;
+/* v45.3 — Pending approval uses the same card component and grid rhythm. */
+.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card{
   cursor:pointer;
-  box-shadow:none;
 }
-.dashboard-v19 .v451-pending-approval .v451-pending-icon{
-  width:48px;
-  height:48px;
-  border-radius:50%;
-  flex:0 0 48px;
-  display:grid;
-  place-items:center;
-  border:1px solid rgba(160,110,255,.42);
+.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .label,
+.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .value{
   color:#a979ff;
-  font-size:23px;
-  background:rgba(113,67,196,.10);
 }
-.dashboard-v19 .v451-pending-approval .v451-pending-copy{
-  flex:1;
-  min-width:0;
-}
-.dashboard-v19 .v451-pending-approval .v451-pending-copy span{
-  display:block;
-  font-size:14px;
+.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .foot{
   color:var(--text-dim);
-  margin-bottom:3px;
 }
-.dashboard-v19 .v451-pending-approval .v451-pending-copy b{
-  font-size:26px;
-  line-height:1.1;
-  color:#a979ff;
-  margin-inline-end:5px;
-}
-.dashboard-v19 .v451-pending-approval .v451-pending-copy small{
-  display:block;
-  font-size:10.5px;
-  color:var(--text-faint);
-  margin-top:4px;
-  line-height:1.45;
-}
-.dashboard-v19 .v451-pending-approval .v451-pending-link{
-  flex:0 0 auto;
-  color:#b68cff;
-  font-size:12px;
-  white-space:nowrap;
-}
-.dashboard-v19 .v451-pending-approval:active{
+.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card:active{
   transform:translateY(1px);
 }
 
@@ -1472,31 +1424,6 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
   }
   .dashboard-v19 .owner-card-grid-v45 > .card:last-child{
     min-height:126px;
-  }
-  .dashboard-v19 .v451-pending-approval{
-    min-height:92px;
-    padding:13px 14px;
-    margin:11px 0;
-    gap:11px;
-    border-radius:18px;
-  }
-  .dashboard-v19 .v451-pending-approval .v451-pending-icon{
-    width:43px;
-    height:43px;
-    flex-basis:43px;
-    font-size:20px;
-  }
-  .dashboard-v19 .v451-pending-approval .v451-pending-copy span{
-    font-size:12px;
-  }
-  .dashboard-v19 .v451-pending-approval .v451-pending-copy b{
-    font-size:24px;
-  }
-  .dashboard-v19 .v451-pending-approval .v451-pending-copy small{
-    font-size:9.5px;
-  }
-  .dashboard-v19 .v451-pending-approval .v451-pending-link{
-    font-size:11px;
   }
 }
 @media (max-width:370px){
@@ -1568,7 +1495,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45.2 السحابية</p>
+      <p>نسخة ERP v45.3 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1591,7 +1518,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45.2 · Centered Owner Cards
+   DOT ALMASIAH — ERP v45.3 · Unified Approval Card
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -5249,6 +5176,7 @@ v19RebuildPrimaryCards=function(main){
    Uses the existing cloud sales state and existing cloudSales route. */
 function v451EnsurePendingApprovalCard(main){
   if(!main?.classList?.contains('dashboard-v19'))return;
+  main.querySelector('.v453-pending-card')?.remove();
   main.querySelector('.v451-pending-approval')?.remove();
   const sales=Array.isArray(window.DOT_CLOUD?.state?.sales)?window.DOT_CLOUD.state.sales:[];
   const pending=sales.filter(x=>!x.historical&&String(x.status||'pending')==='pending');
@@ -5256,18 +5184,16 @@ function v451EnsurePendingApprovalCard(main){
   if(!cards)return;
   const card=document.createElement('button');
   card.type='button';
-  card.className='v451-pending-approval';
+  card.className='card v453-pending-card';
   card.setAttribute('aria-label',`عرض ${pending.length} عملية تحت الاعتماد`);
   card.innerHTML=`
-    <span class="v451-pending-icon">✓</span>
-    <span class="v451-pending-copy">
-      <span>عمليات تحت الاعتماد</span>
-      <b>${ar(pending.length)}</b> <span style="display:inline;font-size:11px;color:var(--text-dim)">${pending.length===1?'عملية':'عمليات'}</span>
-      <small>اضغط للانتقال مباشرة إلى قائمة العمليات والنظر في الاعتماد</small>
-    </span>
-    <span class="v451-pending-link">عرض العمليات ‹</span>`;
+    <div class="label">عمليات تحت الاعتماد</div>
+    <div class="value">${ar(pending.length)} ${pending.length===1?'عملية':'عمليات'}</div>
+    <div class="foot">اضغط لعرض العمليات واتخاذ الإجراء</div>`;
   card.addEventListener('click',()=>{app.view='cloudSales';render();});
-  cards.insertAdjacentElement('beforebegin',card);
+  const lastCard=cards.lastElementChild;
+  if(lastCard)cards.insertBefore(card,lastCard);
+  else cards.appendChild(card);
 }
 const __v19RebuildPrimaryCardsV451=v19RebuildPrimaryCards;
 v19RebuildPrimaryCards=function(main){

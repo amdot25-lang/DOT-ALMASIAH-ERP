@@ -1,7 +1,7 @@
 import { firebaseConfig, OWNER_EMAIL } from './firebase-config.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, runTransaction, writeBatch } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -247,8 +247,239 @@ async function cancelSaleRecord(id){
   });
 }
 
+/* =========================================================
+   Broadcaster Cloud Store — v44
+   Firestore is the source of truth; localStorage is only cache.
+   ========================================================= */
+const BC_COLLECTIONS={
+  broadcast:'broadcasterCommissions',
+  aliases:'broadcasterAliases',
+  imports:'importBatches',
+  locks:'lockedMonths'
+};
+const broadcasterCloudState={
+  ready:false,
+  syncing:false,
+  data:{broadcast:[],aliases:[],imports:[],locks:[],settings:{}},
+  queue:Promise.resolve()
+};
+const plainValue=value=>{
+  if(value===undefined)return null;
+  if(value===null||typeof value!=='object')return value;
+  if(Array.isArray(value))return value.map(plainValue);
+  const out={};
+  for(const [k,v] of Object.entries(value)){
+    if(v!==undefined)out[k]=plainValue(v);
+  }
+  return out;
+};
+const stableValue=value=>{
+  if(Array.isArray(value))return value.map(stableValue);
+  if(value&&typeof value==='object'){
+    const out={};
+    for(const k of Object.keys(value).sort())out[k]=stableValue(value[k]);
+    return out;
+  }
+  return value;
+};
+const stableJSON=value=>JSON.stringify(stableValue(plainValue(value)));
+const safeDocId=(prefix,row,index)=>{
+  const raw=String(row?.id||row?.month||`${prefix}_${index}`).trim();
+  const clean=raw.replace(/[\/#?\[\]]/g,'_').slice(0,140);
+  return clean||`${prefix}_${index}`;
+};
+const checksum32=value=>{
+  const s=stableJSON(value);
+  let h=2166136261;
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}
+  return (h>>>0).toString(16).padStart(8,'0');
+};
+async function commitOperations(ops){
+  for(let i=0;i<ops.length;i+=400){
+    const batch=writeBatch(db);
+    for(const op of ops.slice(i,i+400)){
+      if(op.type==='delete')batch.delete(op.ref);
+      else batch.set(op.ref,op.data,{merge:false});
+    }
+    await batch.commit();
+  }
+}
+async function readCollectionRows(name){
+  const snap=await getDocs(collection(db,name));
+  return snap.docs.map(d=>({id:d.id,...d.data()}));
+}
+async function readBroadcasterCloud(){
+  const [broadcast,aliases,imports,lockDocs,settingsSnap]=await Promise.all([
+    readCollectionRows(BC_COLLECTIONS.broadcast),
+    readCollectionRows(BC_COLLECTIONS.aliases),
+    readCollectionRows(BC_COLLECTIONS.imports),
+    readCollectionRows(BC_COLLECTIONS.locks),
+    getDoc(doc(db,'appSettings','current'))
+  ]);
+  const locks=lockDocs.map(x=>String(x.month||x.id)).filter(Boolean).sort();
+  return {
+    broadcast:broadcast.sort((a,b)=>String(a.id).localeCompare(String(b.id))),
+    aliases:aliases.sort((a,b)=>String(a.id).localeCompare(String(b.id))),
+    imports:imports.sort((a,b)=>String(a.ts||'').localeCompare(String(b.ts||''))),
+    locks,
+    settings:settingsSnap.exists()?plainValue(settingsSnap.data()):{}
+  };
+}
+async function replaceCloudRows(kind,rows){
+  const collectionName=BC_COLLECTIONS[kind];
+  if(!collectionName)throw new Error('نوع بيانات المذيعين غير معروف.');
+  const cleanRows=Array.isArray(rows)?rows.map(plainValue):[];
+  const current=Array.isArray(broadcasterCloudState.data[kind])?broadcasterCloudState.data[kind]:[];
+  const currentMap=new Map(current.map((row,index)=>[safeDocId(kind,row,index),row]));
+  const nextMap=new Map(cleanRows.map((row,index)=>[safeDocId(kind,row,index),row]));
+  const ops=[];
+  for(const [id,row] of nextMap){
+    if(stableJSON(currentMap.get(id))!==stableJSON(row)){
+      ops.push({type:'set',ref:doc(db,collectionName,id),data:{...row,id}});
+    }
+  }
+  for(const id of currentMap.keys()){
+    if(!nextMap.has(id))ops.push({type:'delete',ref:doc(db,collectionName,id)});
+  }
+  await commitOperations(ops);
+  broadcasterCloudState.data[kind]=cleanRows;
+  return {writes:ops.filter(x=>x.type==='set').length,deletes:ops.filter(x=>x.type==='delete').length};
+}
+async function replaceCloudLocks(locks){
+  const rows=[...new Set((locks||[]).map(String).filter(Boolean))].sort().map(month=>({id:month,month}));
+  return replaceCloudRows('locks',rows);
+}
+async function saveBroadcasterCloudDataset(kind,value){
+  if(state.profile?.role!=='owner')throw new Error('هذه العملية متاحة للمالك فقط.');
+  broadcasterCloudState.queue=broadcasterCloudState.queue.then(async()=>{
+    broadcasterCloudState.syncing=true;
+    try{
+      let result;
+      if(kind==='settings'){
+        const clean=plainValue(value||{});
+        if(stableJSON(clean)!==stableJSON(broadcasterCloudState.data.settings||{})){
+          await setDoc(doc(db,'appSettings','current'),clean,{merge:false});
+          broadcasterCloudState.data.settings=clean;
+          result={writes:1,deletes:0};
+        }else result={writes:0,deletes:0};
+      }else if(kind==='locks'){
+        result=await replaceCloudLocks(value);
+        broadcasterCloudState.data.locks=[...new Set((value||[]).map(String).filter(Boolean))].sort();
+      }else{
+        result=await replaceCloudRows(kind,value);
+      }
+      return result;
+    }finally{
+      broadcasterCloudState.syncing=false;
+    }
+  });
+  return broadcasterCloudState.queue;
+}
+async function migrateBroadcasterCloud(localPayload){
+  if(state.profile?.role!=='owner')throw new Error('الترحيل متاح للمالك فقط.');
+  const markerRef=doc(db,'migrations','broadcaster_v44');
+  const marker=await getDoc(markerRef);
+  if(marker.exists()&&marker.data()?.status==='complete'){
+    const cloud=await readBroadcasterCloud();
+    broadcasterCloudState.data=cloud;
+    broadcasterCloudState.ready=true;
+    return {source:'cloud',alreadyMigrated:true,data:cloud,verification:marker.data()?.verification||{}};
+  }
+
+  const local={
+    broadcast:Array.isArray(localPayload?.broadcast)?plainValue(localPayload.broadcast):[],
+    aliases:Array.isArray(localPayload?.aliases)?plainValue(localPayload.aliases):[],
+    imports:Array.isArray(localPayload?.imports)?plainValue(localPayload.imports):[],
+    locks:Array.isArray(localPayload?.locks)?plainValue(localPayload.locks):[],
+    settings:plainValue(localPayload?.settings||{})
+  };
+  await setDoc(markerRef,{
+    status:'running',
+    version:'v44',
+    startedAt:serverTimestamp(),
+    ownerUid:state.user.uid,
+    localCounts:{
+      broadcast:local.broadcast.length,
+      aliases:local.aliases.length,
+      imports:local.imports.length,
+      locks:local.locks.length
+    },
+    localChecksums:{
+      broadcast:checksum32(local.broadcast),
+      aliases:checksum32(local.aliases),
+      imports:checksum32(local.imports),
+      locks:checksum32(local.locks),
+      settings:checksum32(local.settings)
+    }
+  },{merge:true});
+
+  broadcasterCloudState.data={broadcast:[],aliases:[],imports:[],locks:[],settings:{}};
+  await replaceCloudRows('broadcast',local.broadcast);
+  await replaceCloudRows('aliases',local.aliases);
+  await replaceCloudRows('imports',local.imports);
+  await replaceCloudLocks(local.locks);
+  await setDoc(doc(db,'appSettings','current'),local.settings,{merge:false});
+
+  const cloud=await readBroadcasterCloud();
+  const verification={
+    counts:{
+      local:{broadcast:local.broadcast.length,aliases:local.aliases.length,imports:local.imports.length,locks:local.locks.length},
+      cloud:{broadcast:cloud.broadcast.length,aliases:cloud.aliases.length,imports:cloud.imports.length,locks:cloud.locks.length}
+    },
+    checksums:{
+      local:{
+        broadcast:checksum32(local.broadcast),aliases:checksum32(local.aliases),
+        imports:checksum32(local.imports),locks:checksum32(local.locks),settings:checksum32(local.settings)
+      },
+      cloud:{
+        broadcast:checksum32(cloud.broadcast),aliases:checksum32(cloud.aliases),
+        imports:checksum32(cloud.imports),locks:checksum32(cloud.locks),settings:checksum32(cloud.settings)
+      }
+    }
+  };
+  const countOK=Object.keys(verification.counts.local).every(k=>verification.counts.local[k]===verification.counts.cloud[k]);
+  const checksumOK=Object.keys(verification.checksums.local).every(k=>verification.checksums.local[k]===verification.checksums.cloud[k]);
+  if(!countOK||!checksumOK){
+    await setDoc(markerRef,{status:'verification_failed',verification,failedAt:serverTimestamp()},{merge:true});
+    throw new Error('فشل التحقق من تطابق بيانات المذيعين بعد الرفع.');
+  }
+
+  await setDoc(markerRef,{
+    status:'complete',
+    completedAt:serverTimestamp(),
+    version:'v44',
+    verification
+  },{merge:true});
+  broadcasterCloudState.data=cloud;
+  broadcasterCloudState.ready=true;
+  return {source:'migration',alreadyMigrated:false,data:cloud,verification};
+}
+function subscribeBroadcasterCloud(){
+  if(state.profile?.role!=='owner')return;
+  const emit=()=>window.dispatchEvent(new CustomEvent('dot-broadcaster-cloud-update',{detail:plainValue(broadcasterCloudState.data)}));
+  const bindRows=(kind,name,transform=null)=>{
+    listeners.push(onSnapshot(collection(db,name),snap=>{
+      let rows=snap.docs.map(d=>({id:d.id,...d.data()}));
+      broadcasterCloudState.data[kind]=transform?transform(rows):rows;
+      if(broadcasterCloudState.ready)emit();
+    },e=>console.error(`broadcaster ${kind} subscription`,e)));
+  };
+  bindRows('broadcast',BC_COLLECTIONS.broadcast);
+  bindRows('aliases',BC_COLLECTIONS.aliases);
+  bindRows('imports',BC_COLLECTIONS.imports);
+  bindRows('locks',BC_COLLECTIONS.locks,rows=>rows.map(x=>String(x.month||x.id)).filter(Boolean).sort());
+  listeners.push(onSnapshot(doc(db,'appSettings','current'),snap=>{
+    broadcasterCloudState.data.settings=snap.exists()?plainValue(snap.data()):{};
+    if(broadcasterCloudState.ready)emit();
+  },e=>console.error('broadcaster settings subscription',e)));
+}
+
+
 const api={
   state,
+  broadcasterCloud:broadcasterCloudState,
+  migrateBroadcasterData:migrateBroadcasterCloud,
+  saveBroadcasterDataset:saveBroadcasterCloudDataset,
   role:()=>state.profile?.role||'loading',
   mine:()=>{const regular=state.sales.filter(x=>!x.requestType);return state.profile?.role==='owner'?regular:regular.filter(x=>x.status==='approved'||x.createdBy===state.user?.uid)},
   changeRequests:()=>state.sales.filter(x=>x.requestType),
@@ -324,7 +555,7 @@ onAuthStateChanged(auth,async user=>{
   if(!user){location.replace('./index.html');return;}
   state.user=user;state.profile=await ensureProfile(user);
   if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
-  state.ready=true;subscribe();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
+  state.ready=true;subscribe();subscribeBroadcasterCloud();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
 });
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});

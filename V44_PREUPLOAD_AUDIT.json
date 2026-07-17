@@ -1,0 +1,43 @@
+{
+  "release": "v44",
+  "architecture": {
+    "source_of_truth": "Firestore",
+    "cache": "localStorage",
+    "recovery_seed": "historical-data.json"
+  },
+  "historical_counts": {
+    "broadcast": 853,
+    "aliases": 16,
+    "imports": 3,
+    "lockedMonths": 0
+  },
+  "changed_files": [
+    "dashboard.html",
+    "cloud-bridge.js",
+    "CHANGELOG_v44.md",
+    "V44_MIGRATION_REPORT.md",
+    "V44_PREUPLOAD_AUDIT.json"
+  ],
+  "unchanged_files": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "firestore.rules",
+    "firebase-config.js",
+    "app.js",
+    "legacy-dashboard.html"
+  ],
+  "safety_controls": [
+    "automatic pre-migration snapshot",
+    "one-time migration marker",
+    "deterministic document ids",
+    "count verification",
+    "stable checksum verification",
+    "cloud-first bootstrap after completed migration",
+    "local cache fallback",
+    "differential cloud writes"
+  ],
+  "syntax_checks": {
+    "cloud_bridge": "passed",
+    "dashboard_inline_blocks": 2
+  }
+}

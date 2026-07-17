@@ -1368,7 +1368,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v36 الاحترافية</p>
+      <p>نسخة ERP v44 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1391,7 +1391,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v36 · Cloud + Local History
+   DOT ALMASIAH — ERP v44 · Firestore Broadcaster Cloud
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -1425,8 +1425,34 @@ const DB = {
   }catch(e){console.warn('Historical seed skipped',e)}
 })();
 
+let BROADCASTER_CLOUD_APPLYING=false;
+const BROADCASTER_CLOUD_TIMERS=new Map();
+const BROADCASTER_KEY_KIND={
+  [DB.broadcast]:'broadcast',
+  [DB.aliases]:'aliases',
+  [DB.imports]:'imports',
+  [DB.locks]:'locks'
+};
+function scheduleBroadcasterCloudSave(kind,data){
+  if(BROADCASTER_CLOUD_APPLYING||!kind)return;
+  clearTimeout(BROADCASTER_CLOUD_TIMERS.get(kind));
+  const timer=setTimeout(async()=>{
+    try{
+      if(window.DOT_CLOUD?.role?.()!=='owner'||!window.DOT_CLOUD?.broadcasterCloud?.ready)return;
+      await window.DOT_CLOUD.saveBroadcasterDataset(kind,data);
+    }catch(e){
+      console.error('Broadcaster cloud save failed',kind,e);
+      const pill=document.getElementById('sync-status-text');
+      if(pill)pill.textContent='تعذر مزامنة بيانات المذيعين';
+    }
+  },220);
+  BROADCASTER_CLOUD_TIMERS.set(kind,timer);
+}
 function loadT(key){ try{ const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v)?v:(v||[]); }catch(e){ return []; } }
-function saveT(key,data){ localStorage.setItem(key, JSON.stringify(data)); }
+function saveT(key,data){
+  localStorage.setItem(key, JSON.stringify(data));
+  scheduleBroadcasterCloudSave(BROADCASTER_KEY_KIND[key],data);
+}
 function loadSettings(){
   try{
     const s = JSON.parse(localStorage.getItem(DB.settings));
@@ -1434,7 +1460,10 @@ function loadSettings(){
   }catch(e){}
   return {taxRate:0.15, defaultExchangeRate:3.75, openingBalance:0, openingDiamonds:0, openingCostInc:0, monthlySalesTarget:0, monthlyDiamondTarget:3000000};
 }
-function saveSettings(s){ localStorage.setItem(DB.settings, JSON.stringify(s)); }
+function saveSettings(s){
+  localStorage.setItem(DB.settings, JSON.stringify(s));
+  scheduleBroadcasterCloudSave('settings',s);
+}
 function genId(prefix){ return prefix+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function nowISO(){ return new Date().toISOString(); }
 function fmtDT(iso){ const d=new Date(iso); return d.toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}); }
@@ -1476,6 +1505,62 @@ function restoreSnapshot(id){
   logAudit('استرجاع نسخة سابقة', {snapshotId:id, snapshotDate: snap.ts});
   return true;
 }
+
+
+/* ---------- v44 Broadcaster Firestore migration ---------- */
+function localBroadcasterPayloadV44(){
+  return {
+    broadcast:loadT(DB.broadcast),
+    aliases:loadAliases(),
+    imports:loadT(DB.imports),
+    locks:loadLockedMonths(),
+    settings:loadSettings()
+  };
+}
+function applyBroadcasterCloudCacheV44(data,{rerender=true}={}){
+  if(!data)return;
+  BROADCASTER_CLOUD_APPLYING=true;
+  try{
+    if(Array.isArray(data.broadcast))localStorage.setItem(DB.broadcast,JSON.stringify(data.broadcast));
+    if(Array.isArray(data.aliases))localStorage.setItem(DB.aliases,JSON.stringify(data.aliases));
+    if(Array.isArray(data.imports))localStorage.setItem(DB.imports,JSON.stringify(data.imports));
+    if(Array.isArray(data.locks))localStorage.setItem(DB.locks,JSON.stringify(data.locks));
+    if(data.settings&&typeof data.settings==='object'&&Object.keys(data.settings).length){
+      localStorage.setItem(DB.settings,JSON.stringify(data.settings));
+    }
+    localStorage.setItem('dot_broadcaster_cloud_v44_last_sync',nowISO());
+  }finally{
+    BROADCASTER_CLOUD_APPLYING=false;
+  }
+  if(rerender&&typeof render==='function')render();
+}
+async function initializeBroadcasterCloudV44(){
+  if(window.DOT_CLOUD?.role?.()!=='owner'||!window.DOT_CLOUD?.migrateBroadcasterData)return;
+  const local=localBroadcasterPayloadV44();
+  if(!sessionStorage.getItem('dot_broadcaster_v44_snapshot')){
+    takeSnapshot('نسخة تلقائية قبل ترحيل بيانات المذيعين إلى Firestore v44');
+    sessionStorage.setItem('dot_broadcaster_v44_snapshot','1');
+  }
+  const result=await window.DOT_CLOUD.migrateBroadcasterData(local);
+  applyBroadcasterCloudCacheV44(result.data,{rerender:false});
+  localStorage.setItem('dot_broadcaster_cloud_v44_status','complete');
+  localStorage.setItem('dot_broadcaster_cloud_v44_source',result.source||'cloud');
+  const text=document.getElementById('sync-status-text');
+  if(text)text.textContent=result.alreadyMigrated?'بيانات المذيعين متزامنة':'تم ترحيل بيانات المذيعين بنجاح';
+  if(typeof render==='function')render();
+}
+window.addEventListener('dot-cloud-ready',()=>{
+  initializeBroadcasterCloudV44().catch(e=>{
+    console.error('Broadcaster migration v44 failed',e);
+    localStorage.setItem('dot_broadcaster_cloud_v44_status','failed');
+    const text=document.getElementById('sync-status-text');
+    if(text)text.textContent='تعذر ترحيل بيانات المذيعين — النسخة المحلية محفوظة';
+  });
+});
+window.addEventListener('dot-broadcaster-cloud-update',e=>{
+  if(window.DOT_CLOUD?.broadcasterCloud?.syncing)return;
+  applyBroadcasterCloudCacheV44(e.detail);
+});
 
 /* ---------- Number helpers ---------- */
 function num(v){

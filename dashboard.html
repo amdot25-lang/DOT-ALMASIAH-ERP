@@ -5314,33 +5314,6 @@ function supervisorFilterHTML(){
    <button class="btn primary" id="sp-apply">تطبيق</button>
  </div>`;
 }
-function supervisorRelativeTime(row){
- const raw=row.createdAt?.toDate?row.createdAt.toDate():row.createdAt||row.updatedAt||row.saleDate;
- const d=raw instanceof Date?raw:new Date(raw);
- if(Number.isNaN(d.getTime()))return cloudDate(row.saleDate);
- const diff=Math.max(0,Date.now()-d.getTime()),mins=Math.floor(diff/60000);
- if(mins<1)return 'الآن';
- if(mins<60)return `قبل ${mins} دقيقة`;
- const hrs=Math.floor(mins/60);
- if(hrs<24)return `قبل ${hrs} ساعة`;
- const days=Math.floor(hrs/24);
- if(days<7)return `قبل ${days} يوم`;
- return cloudDate(row.saleDate);
-}
-function supervisorStatusClass(status){
- return status==='approved'?'approved':status==='rejected'?'rejected':status==='cancelled'?'cancelled':'pending';
-}
-function supervisorRecentSalesHTML(rows){
- if(!rows.length)return `<div class="sup-empty">لا توجد مبيعات ضمن الفترة المحددة.</div>`;
- return rows.slice(0,5).map(x=>`
-  <button class="sup-sale-row" data-sale-row="${x.id}">
-   <span class="sup-sale-status ${supervisorStatusClass(x.status)}">${cloudStatus(x.status)}</span>
-   <span class="sup-sale-diamonds"><b>${cloudNum(x.diamonds)}</b><small>ماسة</small></span>
-   <span class="sup-sale-payment"><b>${x.payment||'—'}</b><small>${supervisorRelativeTime(x)}</small></span>
-   <span class="sup-sale-arrow">‹</span>
-  </button>`).join('');
-}
-
 function supervisorRelativeTimeV41(row){
  const raw=row.createdAt?.toDate?row.createdAt.toDate():row.createdAt||row.updatedAt||row.saleDate;
  const d=raw instanceof Date?raw:new Date(raw);
@@ -5382,7 +5355,8 @@ function renderSupervisorHome(main){
   const now=new Date(), monthKey=now.toISOString().slice(0,7);
   const monthApproved=all.filter(x=>x.status==='approved'&&String(x.saleDate||'').slice(0,7)===monthKey);
   const monthDiamonds=monthApproved.reduce((a,x)=>a+Number(x.diamonds||0),0);
-  const monthlyTarget=Number(3000000||3000000);
+  const settings=loadSettings();
+  const monthlyTarget=Number(settings.monthlyDiamondTarget||3000000);
   const goalProgress=monthlyTarget?Math.min(999,(monthDiamonds/monthlyTarget)*100):0;
 
   const last7Start=new Date(now); last7Start.setDate(now.getDate()-6);

@@ -1,0 +1,36 @@
+{
+  "release": "v42",
+  "changed_files": [
+    "dashboard.html",
+    "CHANGELOG_v42.md",
+    "V42_PREUPLOAD_AUDIT.json"
+  ],
+  "shared_source_check": {
+    "owner": "loadSettings().monthlyDiamondTarget",
+    "supervisor": "loadSettings().monthlyDiamondTarget",
+    "fallback": 3000000,
+    "result": "consistent"
+  },
+  "removed_dead_functions": [
+    "supervisorRelativeTime",
+    "supervisorStatusClass",
+    "supervisorRecentSalesHTML"
+  ],
+  "active_helpers": [
+    "supervisorRelativeTimeV41",
+    "supervisorStatusClassV41",
+    "supervisorRecentSalesHTMLV41"
+  ],
+  "javascript_blocks_checked": 2,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "firebase-config.js",
+    "firestore.rules",
+    "app.js"
+  ],
+  "deferred": [
+    "Broadcaster Firestore migration",
+    "legacy-dashboard.html localStorage modernization"
+  ]
+}

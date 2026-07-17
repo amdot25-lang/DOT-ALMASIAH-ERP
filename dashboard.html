@@ -1325,78 +1325,182 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 
 
 <style id="owner-card-grid-v45">
-/* v45 — Owner dashboard layout only.
-   Existing card markup, values, calculations and events are unchanged. */
+/* v45.1 — Owner dashboard compact rhythm.
+   Layout and presentation only; card calculations remain unchanged. */
+.dashboard-v19{
+  padding-bottom:132px !important;
+}
 .dashboard-v19 .owner-card-grid-v45{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr)) !important;
   grid-auto-flow:row;
   align-items:stretch;
-  gap:14px;
+  gap:12px;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card{
   width:auto;
   min-width:0;
-  min-height:154px;
+  min-height:126px;
   height:100%;
   margin:0;
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
-  justify-content:center;
+  justify-content:flex-start;
+  gap:6px;
+  padding:16px 15px;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card .label{
-  line-height:1.45;
+  line-height:1.35;
+  min-height:0;
+  margin:0;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card .value{
   overflow-wrap:anywhere;
-  line-height:1.2;
+  line-height:1.12;
+  margin:2px 0 0;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card .foot{
-  line-height:1.55;
+  line-height:1.4;
   margin-top:auto;
-  padding-top:8px;
+  padding-top:6px;
+  min-height:0;
 }
-/* The comprehensive/total-profit card remains the visual ending of the grid. */
 .dashboard-v19 .owner-card-grid-v45 > .card:last-child{
   grid-column:1 / -1 !important;
-  min-height:166px;
+  min-height:138px;
 }
-/* Preserve an intentionally inline full-width card in older saved variants. */
 .dashboard-v19 .owner-card-grid-v45 > .card[style*="grid-column"]{
   grid-column:1 / -1 !important;
 }
+
+/* Owner pending-approval action card. */
+.dashboard-v19 .v451-pending-approval{
+  width:100%;
+  border:1px solid rgba(155,103,255,.38);
+  background:
+    radial-gradient(circle at 12% 50%,rgba(126,72,220,.14),transparent 34%),
+    linear-gradient(135deg,rgba(26,21,39,.97),rgba(17,18,22,.98));
+  border-radius:20px;
+  padding:15px 17px;
+  margin:14px 0;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  color:var(--text);
+  text-align:right;
+  cursor:pointer;
+  box-shadow:none;
+}
+.dashboard-v19 .v451-pending-approval .v451-pending-icon{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  flex:0 0 48px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(160,110,255,.42);
+  color:#a979ff;
+  font-size:23px;
+  background:rgba(113,67,196,.10);
+}
+.dashboard-v19 .v451-pending-approval .v451-pending-copy{
+  flex:1;
+  min-width:0;
+}
+.dashboard-v19 .v451-pending-approval .v451-pending-copy span{
+  display:block;
+  font-size:14px;
+  color:var(--text-dim);
+  margin-bottom:3px;
+}
+.dashboard-v19 .v451-pending-approval .v451-pending-copy b{
+  font-size:26px;
+  line-height:1.1;
+  color:#a979ff;
+  margin-inline-end:5px;
+}
+.dashboard-v19 .v451-pending-approval .v451-pending-copy small{
+  display:block;
+  font-size:10.5px;
+  color:var(--text-faint);
+  margin-top:4px;
+  line-height:1.45;
+}
+.dashboard-v19 .v451-pending-approval .v451-pending-link{
+  flex:0 0 auto;
+  color:#b68cff;
+  font-size:12px;
+  white-space:nowrap;
+}
+.dashboard-v19 .v451-pending-approval:active{
+  transform:translateY(1px);
+}
+
 @media (max-width:600px){
+  .dashboard-v19{
+    padding-bottom:148px !important;
+  }
   .dashboard-v19 .owner-card-grid-v45{
     grid-template-columns:repeat(2,minmax(0,1fr)) !important;
-    gap:10px;
+    gap:9px;
   }
   .dashboard-v19 .owner-card-grid-v45 > .card{
-    min-height:150px;
-    padding:14px 11px;
-    border-radius:18px;
+    min-height:116px;
+    padding:12px 10px;
+    border-radius:17px;
+    gap:4px;
   }
   .dashboard-v19 .owner-card-grid-v45 > .card .label{
-    font-size:clamp(11px,3.15vw,14px);
+    font-size:clamp(10.5px,3vw,13px);
   }
   .dashboard-v19 .owner-card-grid-v45 > .card .value{
-    font-size:clamp(19px,5.4vw,27px);
-    letter-spacing:-.25px;
+    font-size:clamp(18px,5.15vw,25px);
+    letter-spacing:-.2px;
   }
   .dashboard-v19 .owner-card-grid-v45 > .card .foot{
-    font-size:clamp(9px,2.55vw,12px);
+    font-size:clamp(8.5px,2.35vw,11px);
+    padding-top:4px;
   }
   .dashboard-v19 .owner-card-grid-v45 > .card:last-child{
-    min-height:158px;
+    min-height:126px;
+  }
+  .dashboard-v19 .v451-pending-approval{
+    min-height:92px;
+    padding:13px 14px;
+    margin:11px 0;
+    gap:11px;
+    border-radius:18px;
+  }
+  .dashboard-v19 .v451-pending-approval .v451-pending-icon{
+    width:43px;
+    height:43px;
+    flex-basis:43px;
+    font-size:20px;
+  }
+  .dashboard-v19 .v451-pending-approval .v451-pending-copy span{
+    font-size:12px;
+  }
+  .dashboard-v19 .v451-pending-approval .v451-pending-copy b{
+    font-size:24px;
+  }
+  .dashboard-v19 .v451-pending-approval .v451-pending-copy small{
+    font-size:9.5px;
+  }
+  .dashboard-v19 .v451-pending-approval .v451-pending-link{
+    font-size:11px;
   }
 }
 @media (max-width:370px){
   .dashboard-v19 .owner-card-grid-v45{
-    gap:8px;
+    gap:7px;
   }
   .dashboard-v19 .owner-card-grid-v45 > .card{
-    min-height:144px;
-    padding:12px 9px;
+    min-height:112px;
+    padding:11px 8px;
+  }
+  .dashboard-v19 .v451-pending-approval{
+    padding:12px 11px;
   }
 }
 </style>
@@ -1446,7 +1550,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45 السحابية</p>
+      <p>نسخة ERP v45.1 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1469,7 +1573,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45 · Owner Card Grid
+   DOT ALMASIAH — ERP v45.1 · Compact Owner Cards
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -5120,6 +5224,37 @@ v19RebuildPrimaryCards=function(main){
   main.querySelector('.v19-financial-details')?.remove();
   cards.insertAdjacentHTML('afterend',`<details class="v19-financial-details"><summary><span>التفاصيل المالية والتشغيلية</span><small>عرض المؤشرات الإضافية عند الحاجة</small></summary><div class="v19-detail-grid"><div class="v19-detail-item"><span>تكلفة الألماس المباع</span><b>${sar(cogs)} ر.س</b><small>حسب متوسط التكلفة</small></div><div class="v19-detail-item"><span>مصروفات التشغيل</span><b>${sar(expenses)} ر.س</b><small>وفق القيود المسجلة</small></div><div class="v19-detail-item ${hasBc?'':'pending'}"><span>رواتب المذيعين</span><b>${hasBc?`${sar(salary)} ر.س`:'بانتظار الكشف'}</b><small>لا تدخل ضمن الربح الشامل</small></div><div class="v19-detail-item ${hasBc?'':'pending'}"><span>عمولة الوكالة</span><b>${hasBc?`${sar(commission)} ر.س`:'بانتظار الكشف'}</b><small>تمثل ربح وكالة المذيعين</small></div><div class="v19-detail-item ${hasBc?'':'pending'}"><span>إجمالي ملف المذيعين</span><b>${hasBc?`${sar(total)} ر.س`:'بانتظار الكشف'}</b><small>الرواتب + عمولة الوكالة</small></div><div class="v19-detail-item ${hasBc?'':'pending'}"><span>الربح الشامل</span><b>${hasBc?`${sar(grand)} ر.س`:'غير نهائي'}</b><small>صافي المتجر + عمولة الوكالة</small></div><div class="v19-detail-item"><span>عدد القيود</span><b>${ar(storeRows.length)} / ${hasBc?ar(bcRows.length):'—'}</b><small>المتجر / المذيعون</small></div></div></details>`);
   const oldAlert=[...main.querySelectorAll('.alert')].find(x=>x.textContent.includes('تم تعديل هدف الأداء الشهري'));oldAlert?.remove();main.querySelector('.v19-inline-note')?.remove();if(!hasBc){main.querySelector('.v19-financial-details')?.insertAdjacentHTML('afterend','<div class="v19-inline-note">لن تظهر رواتب المذيعين أو عمولة الوكالة كأصفار؛ تُستكمل تلقائيًا بعد ورود كشف الرواتب الرسمي واعتماده.</div>');}
+};
+
+
+/* v45.1 — Owner pending approval shortcut.
+   Uses the existing cloud sales state and existing cloudSales route. */
+function v451EnsurePendingApprovalCard(main){
+  if(!main?.classList?.contains('dashboard-v19'))return;
+  main.querySelector('.v451-pending-approval')?.remove();
+  const sales=Array.isArray(window.DOT_CLOUD?.state?.sales)?window.DOT_CLOUD.state.sales:[];
+  const pending=sales.filter(x=>!x.historical&&String(x.status||'pending')==='pending');
+  const cards=main.querySelector('.owner-card-grid-v45');
+  if(!cards)return;
+  const card=document.createElement('button');
+  card.type='button';
+  card.className='v451-pending-approval';
+  card.setAttribute('aria-label',`عرض ${pending.length} عملية تحت الاعتماد`);
+  card.innerHTML=`
+    <span class="v451-pending-icon">✓</span>
+    <span class="v451-pending-copy">
+      <span>عمليات تحت الاعتماد</span>
+      <b>${ar(pending.length)}</b> <span style="display:inline;font-size:11px;color:var(--text-dim)">${pending.length===1?'عملية':'عمليات'}</span>
+      <small>اضغط للانتقال مباشرة إلى قائمة العمليات والنظر في الاعتماد</small>
+    </span>
+    <span class="v451-pending-link">عرض العمليات ‹</span>`;
+  card.addEventListener('click',()=>{app.view='cloudSales';render();});
+  cards.insertAdjacentElement('beforebegin',card);
+}
+const __v19RebuildPrimaryCardsV451=v19RebuildPrimaryCards;
+v19RebuildPrimaryCards=function(main){
+  __v19RebuildPrimaryCardsV451(main);
+  v451EnsurePendingApprovalCard(main);
 };
 
 /* Quarterly VAT calculations */

@@ -917,10 +917,10 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
   }catch(e){}
 })();
 </script>
-<script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
+<script type="module" src="./cloud-bridge.js?v=35.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — v21 Tax & Names (Offline, LocalStorage)
+   DOT ALMASIAH (Offline, LocalStorage)
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -1460,7 +1460,7 @@ function renderDashboard(main){
 
   main.innerHTML = `
     <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — نسخة ERP v32 المستقرة</div></div>
+      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة</div></div>
       <div class="flex gap">
         <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
         <button class="btn ${isMonthLocked(currentMonth())?'danger':'primary'}" id="dash-lock">${isMonthLocked(currentMonth())?'فك إغلاق الشهر':'إغلاق الشهر'}</button>
@@ -3170,7 +3170,7 @@ function renderDashboard(main){
 
   main.innerHTML = `
     <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — v21 Tax & Names</div></div>
+      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة</div></div>
       <div class="flex gap">
         <button class="btn" id="dash-manager-report">تقرير مدير</button>
         <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
@@ -5119,6 +5119,20 @@ document.getElementById('mobile-overlay')?.addEventListener('click',closeMobileN
 
 /* ---------- init ---------- */
 render();
+
+/* v35 FINAL UI GUARD */
+(function(){
+  const forbiddenLabels = new Set(['مركز القيادة','مركز القيادة التنفيذي','التقارير']);
+  function cleanNavigation(){
+    document.querySelectorAll('#navlist .navbtn').forEach(btn=>{
+      const label=(btn.textContent||'').trim();
+      if(forbiddenLabels.has(label)) btn.remove();
+    });
+  }
+  const previousRenderNav = renderNav;
+  renderNav = function(){ previousRenderNav(); cleanNavigation(); };
+  document.addEventListener('DOMContentLoaded', cleanNavigation);
+})();
 </script>
 </body>
 </html>

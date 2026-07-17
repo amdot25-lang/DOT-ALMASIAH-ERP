@@ -1383,19 +1383,28 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 }
 
 /* v45.3 — Pending approval uses the same card component and grid rhythm. */
-.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card{
-  cursor:pointer;
-  grid-column:1 / -1 !important;
+.dashboard-v19 .v453-pending-card{
+  width:100%;
   min-height:126px;
+  margin:12px 0;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:16px 15px;
+  text-align:center;
+  cursor:pointer;
 }
-.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .label,
-.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .value{
+.dashboard-v19 .v453-pending-card .label,
+.dashboard-v19 .v453-pending-card .value{
   color:#a979ff;
 }
-.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card .foot{
+.dashboard-v19 .v453-pending-card .foot{
   color:var(--text-dim);
 }
-.dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card:active{
+.dashboard-v19 .v453-pending-card:active{
   transform:translateY(1px);
 }
 
@@ -1427,8 +1436,11 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
   .dashboard-v19 .owner-card-grid-v45 > .card:last-child{
     min-height:126px;
   }
-  .dashboard-v19 .owner-card-grid-v45 > .card.v453-pending-card{
+  .dashboard-v19 .v453-pending-card{
     min-height:116px;
+    margin:10px 0;
+    padding:12px 10px;
+    border-radius:17px;
   }
 }
 @media (max-width:370px){
@@ -1500,7 +1512,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45.4 السحابية</p>
+      <p>نسخة ERP v45.5 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1523,7 +1535,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45.4 · Alignment Fix
+   DOT ALMASIAH — ERP v45.5 · Approval Below Stock
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -5208,9 +5220,7 @@ function v451EnsurePendingApprovalCard(main){
     <div class="value">${ar(pending.length)} ${pending.length===1?'عملية':'عمليات'}</div>
     <div class="foot">اضغط لعرض العمليات واتخاذ الإجراء</div>`;
   card.addEventListener('click',()=>{app.view='cloudSales';render();});
-  const lastCard=cards.lastElementChild;
-  if(lastCard)cards.insertBefore(card,lastCard);
-  else cards.appendChild(card);
+  cards.insertAdjacentElement('beforebegin',card);
 }
 const __v19RebuildPrimaryCardsV451=v19RebuildPrimaryCards;
 v19RebuildPrimaryCards=function(main){

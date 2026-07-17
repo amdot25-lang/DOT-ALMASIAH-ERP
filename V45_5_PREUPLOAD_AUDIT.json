@@ -1,0 +1,31 @@
+{
+  "release": "v45.5",
+  "scope": "move pending approval card below stock",
+  "changed_runtime_files": [
+    "dashboard.html"
+  ],
+  "checks": {
+    "pending_before_grid": true,
+    "pending_not_inside_grid": true,
+    "pending_full_width": true,
+    "pending_centered": true,
+    "purple_preserved": true,
+    "pending_click_preserved": true,
+    "monthly_centering_preserved": true,
+    "two_columns_preserved": true,
+    "firestore_preserved": true
+  },
+  "inline_javascript_blocks_checked": 2,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "cloud-bridge.js",
+    "firestore.rules",
+    "firebase-config.js",
+    "app.js",
+    "legacy-dashboard.html"
+  ],
+  "calculation_logic_changed": false,
+  "firestore_changed": false,
+  "supervisor_dashboard_changed": false
+}

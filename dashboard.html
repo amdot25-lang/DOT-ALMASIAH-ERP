@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DOT ALMASIAH · ERP v32</title>
+<title>DOT ALMASIAH · ERP v36</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=El+Messiri:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -852,6 +852,66 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 }
 </style>
 </style>
+
+<style id="v36-professional-header-style">
+/* v36 — professional mobile header: account left, navigation right, no overlap */
+.account-menu-wrap{
+  position:fixed!important;
+  top:max(14px,env(safe-area-inset-top))!important;
+  left:max(14px,env(safe-area-inset-left))!important;
+  right:auto!important;
+  z-index:1300!important;
+  direction:rtl;
+}
+.account-menu-btn{
+  width:auto!important;
+  min-width:172px!important;
+  max-width:min(230px,calc(100vw - 92px))!important;
+  height:52px!important;
+  padding:7px 11px!important;
+  border-radius:17px!important;
+  border:1px solid rgba(214,177,86,.48)!important;
+  background:linear-gradient(145deg,rgba(26,24,20,.98),rgba(14,14,16,.98))!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+.account-user-icon{
+  width:35px!important;height:35px!important;
+  background:linear-gradient(145deg,#30281a,#18140e)!important;
+  border-color:rgba(218,177,77,.58)!important;
+  font-size:0!important;
+}
+.account-user-icon::after{
+  content:'DM';font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--gold-bright);letter-spacing:.4px
+}
+.account-user-text{align-items:flex-start!important;text-align:right!important}
+.account-user-text strong{font-size:13px!important;max-width:130px!important}
+.account-user-text small{font-size:9.5px!important;letter-spacing:.2px}
+.account-dropdown{left:0!important;right:auto!important;top:60px!important;width:225px!important}
+.mobile-menu-btn{
+  top:max(14px,env(safe-area-inset-top))!important;
+  right:max(14px,env(safe-area-inset-right))!important;
+  left:auto!important;
+  width:52px!important;height:52px!important;border-radius:17px!important;
+  background:linear-gradient(145deg,rgba(24,23,20,.98),rgba(14,14,16,.98))!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.30)!important;
+}
+@media(max-width:900px){
+  .page-head{padding-top:74px!important}
+  .sync-status-pill{top:72px!important;left:max(14px,env(safe-area-inset-left))!important}
+}
+@media(max-width:520px){
+  .account-menu-btn{min-width:150px!important;max-width:calc(100vw - 88px)!important;height:50px!important}
+  .account-user-icon{width:33px!important;height:33px!important}
+  .account-user-text strong{max-width:104px!important;font-size:12px!important}
+  .mobile-menu-btn{width:50px!important;height:50px!important}
+}
+@media(max-width:390px){
+  .account-menu-btn{min-width:138px!important;padding:6px 8px!important}
+  .account-user-text strong{max-width:88px!important}
+  .account-chevron{display:none!important}
+}
+</style>
+
 </head>
 <body>
 <div id="cloud-loading" class="cloud-loading">جاري تجهيز لوحة DOT ALMASIAH…</div>
@@ -897,7 +957,7 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v32 المستقرة</p>
+      <p>نسخة ERP v36 الاحترافية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -917,10 +977,10 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
   }catch(e){}
 })();
 </script>
-<script type="module" src="./cloud-bridge.js?v=35.0.0"></script>
+<script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH (Offline, LocalStorage)
+   DOT ALMASIAH — ERP v36 · Cloud + Local History
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */
@@ -1460,7 +1520,7 @@ function renderDashboard(main){
 
   main.innerHTML = `
     <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة</div></div>
+      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — نسخة ERP v36 الاحترافية</div></div>
       <div class="flex gap">
         <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
         <button class="btn ${isMonthLocked(currentMonth())?'danger':'primary'}" id="dash-lock">${isMonthLocked(currentMonth())?'فك إغلاق الشهر':'إغلاق الشهر'}</button>
@@ -3170,7 +3230,7 @@ function renderDashboard(main){
 
   main.innerHTML = `
     <div class="page-head">
-      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة</div></div>
+      <div><h2>لوحة التحكم الرئيسية</h2><div class="sub">نظرة شاملة على أداء DOT ALMASIAH حسب الفترة المحددة — v21 Tax & Names</div></div>
       <div class="flex gap">
         <button class="btn" id="dash-manager-report">تقرير مدير</button>
         <button class="btn" id="dash-whatsapp">تقرير واتساب للشهر</button>
@@ -4162,7 +4222,7 @@ function v19LatestBackupDate(){
 function v19UpdateSidebarMeta(){
   const foot=document.querySelector('.sidebar-foot'); if(!foot) return;
   const latest=v19LatestBackupDate();
-  foot.innerHTML=`نسخة ERP v32 المستقرة · تخزين مستقل<span class="v19-backup-meta">آخر نسخة احتياطية: ${latest?escV11(fmtDT(latest)):'لم تُنشأ بعد'}</span>`;
+  foot.innerHTML=`نسخة ERP v36 الاحترافية · تخزين مستقل<span class="v19-backup-meta">آخر نسخة احتياطية: ${latest?escV11(fmtDT(latest)):'لم تُنشأ بعد'}</span>`;
 }
 function v19AnnualHistoryHtml(){
   const rows=getStoreSeries().filter(r=>/^\d{4}-\d{2}-\d{2}$/.test(String(r.date||'')));
@@ -4224,27 +4284,10 @@ function v19EditTarget(){
 }
 
 function v19BuildActionBar(main){
-  const actions=main.querySelector('.page-head .flex.gap'); if(!actions) return;
-  const month=currentMonth(), locked=isMonthLocked(month);
-  actions.className='v19-actionbar';
-  actions.innerHTML=`
-    <button class="btn primary" id="v19-export-report">تصدير التقرير الإداري</button>
-    <button class="btn" id="v19-manager-report">تقرير المدير</button>
-    <button class="btn" id="v19-whatsapp-report">تقرير واتساب</button>
-    <details class="v19-action-menu" id="v19-action-menu"><summary class="btn">إجراءات إضافية ···</summary><div class="v19-action-menu-pop">
-      <button class="btn" id="v19-go-backup">النسخ الاحتياطي والإعدادات</button>
-      <button class="btn danger" id="v19-toggle-lock">${locked?'فك اعتماد وإغلاق الشهر':'اعتماد وإغلاق الشهر'}</button>
-    </div></details>`;
-  document.getElementById('v19-export-report')?.addEventListener('click',()=>v19RunWithLoading('جاري إنشاء التقرير الإداري',()=>exportMonthlyReportV14(selectedInsightMonthV14())));
-  document.getElementById('v19-manager-report')?.addEventListener('click',openManagerReportV11);
-  document.getElementById('v19-whatsapp-report')?.addEventListener('click',()=>openWhatsappReport(month));
-  document.getElementById('v19-go-backup')?.addEventListener('click',()=>{app.view='backup';render();});
-  document.getElementById('v19-toggle-lock')?.addEventListener('click',()=>{
-    const nowLocked=isMonthLocked(month);
-    const msg=nowLocked?`سيُفتح شهر ${month} للتعديل مرة أخرى. هل تريد المتابعة؟`:`سيتم اعتماد شهر ${month} وإغلاقه لمنع التعديل غير المقصود. هل تريد المتابعة؟`;
-    if(!confirm(msg)) return;
-    setMonthLock(month,!nowLocked); render();
-  });
+  /* v36: intentionally remove the report/manager/WhatsApp action strip only.
+     Dashboard filters, target ring, cards and all data calculations remain untouched. */
+  const actions=main.querySelector('.page-head .flex.gap');
+  if(actions) actions.remove();
 }
 
 function v19RebuildPrimaryCards(main){
@@ -5119,20 +5162,6 @@ document.getElementById('mobile-overlay')?.addEventListener('click',closeMobileN
 
 /* ---------- init ---------- */
 render();
-
-/* v35 FINAL UI GUARD */
-(function(){
-  const forbiddenLabels = new Set(['مركز القيادة','مركز القيادة التنفيذي','التقارير']);
-  function cleanNavigation(){
-    document.querySelectorAll('#navlist .navbtn').forEach(btn=>{
-      const label=(btn.textContent||'').trim();
-      if(forbiddenLabels.has(label)) btn.remove();
-    });
-  }
-  const previousRenderNav = renderNav;
-  renderNav = function(){ previousRenderNav(); cleanNavigation(); };
-  document.addEventListener('DOMContentLoaded', cleanNavigation);
-})();
 </script>
 </body>
 </html>

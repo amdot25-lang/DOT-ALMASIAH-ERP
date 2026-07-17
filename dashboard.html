@@ -1346,25 +1346,33 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
   box-sizing:border-box;
   display:flex;
   flex-direction:column;
-  justify-content:flex-start;
+  align-items:center;
+  justify-content:center;
   gap:6px;
   padding:16px 15px;
+  text-align:center;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card .label{
   line-height:1.35;
   min-height:0;
   margin:0;
+  width:100%;
+  text-align:center;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card .value{
   overflow-wrap:anywhere;
   line-height:1.12;
   margin:2px 0 0;
+  width:100%;
+  text-align:center;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card .foot{
   line-height:1.4;
-  margin-top:auto;
-  padding-top:6px;
+  margin:0;
+  padding-top:4px;
   min-height:0;
+  width:100%;
+  text-align:center;
 }
 .dashboard-v19 .owner-card-grid-v45 > .card:last-child{
   grid-column:1 / -1 !important;
@@ -1503,6 +1511,16 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     padding:12px 11px;
   }
 }
+
+.dashboard-v19 .owner-card-grid-v45 > .card:last-child{
+  text-align:center;
+}
+.dashboard-v19 .owner-card-grid-v45 > .card:last-child .label,
+.dashboard-v19 .owner-card-grid-v45 > .card:last-child .value,
+.dashboard-v19 .owner-card-grid-v45 > .card:last-child .foot{
+  text-align:center;
+}
+
 </style>
 
 </head>
@@ -1550,7 +1568,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
     <div class="brand">
       <div class="mark">DM</div>
       <h1>DOT ALMASIAH</h1>
-      <p>نسخة ERP v45.1 السحابية</p>
+      <p>نسخة ERP v45.2 السحابية</p>
     </div>
     <nav class="navlist" id="navlist"></nav>
     <div class="sidebar-foot"><div id="cloud-role-label">جاري التحقق…</div><button class="btn sm logout-btn" id="cloud-logout" aria-hidden="true" tabindex="-1">تسجيل الخروج</button></div>
@@ -1573,7 +1591,7 @@ body[data-erp-view="supervisorHome"] .quick-sale-fab{display:none!important}
 <script type="module" src="./cloud-bridge.js?v=32.0.0"></script>
 <script>
 /* =========================================================
-   DOT ALMASIAH — ERP v45.1 · Compact Owner Cards
+   DOT ALMASIAH — ERP v45.2 · Centered Owner Cards
    ========================================================= */
 
 /* ---------- Storage Layer ---------- */

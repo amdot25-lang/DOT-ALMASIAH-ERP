@@ -1,0 +1,32 @@
+{
+  "release": "v45",
+  "scope": "owner dashboard card layout only",
+  "changed_runtime_files": [
+    "dashboard.html"
+  ],
+  "documentation_files": [
+    "CHANGELOG_v45.md",
+    "V45_LAYOUT_REPORT.md",
+    "V45_PREUPLOAD_AUDIT.json"
+  ],
+  "checks": {
+    "owner_grid_marker_count": 18,
+    "two_column_rule": true,
+    "last_card_full_width": true,
+    "existing_card_markup_preserved": true,
+    "migration_code_preserved": true
+  },
+  "inline_javascript_blocks_checked": 2,
+  "protected_files_unchanged": [
+    "historical-data.json",
+    "BACKUP_SUMMARY.json",
+    "cloud-bridge.js",
+    "firestore.rules",
+    "firebase-config.js",
+    "app.js",
+    "legacy-dashboard.html"
+  ],
+  "data_or_calculation_logic_changed": false,
+  "supervisor_dashboard_changed": false,
+  "firestore_changed": false
+}

@@ -1008,6 +1008,88 @@ tbody tr:nth-child(even){background:rgba(255,255,255,.015)} tbody tr:hover{backg
 }
 </style>
 
+
+<style id="v38-goal-ring-date">
+/* v38 — enlarged percentage-only target ring + Gregorian date */
+.v19-month-state.v38-gregorian-date{
+  gap:8px!important;
+  padding:7px 13px!important;
+  font-size:11.5px!important;
+  font-weight:700!important;
+  color:#cfc8bc!important;
+  border-color:#3a3a3f!important;
+  background:#171719!important;
+  direction:ltr!important;
+  letter-spacing:.15px;
+}
+.v19-month-state.v38-gregorian-date::before{
+  display:none!important;
+  content:none!important;
+}
+.target-v17-grid{
+  grid-template-columns:320px 1fr!important;
+  gap:24px!important;
+}
+.target-v17-ring{
+  width:286px!important;
+  height:286px!important;
+}
+.target-v17-ring svg{
+  width:286px!important;
+  height:286px!important;
+}
+.target-v17-ring .bg,
+.target-v17-ring .fg{
+  stroke-width:10!important;
+}
+.target-v17-center{
+  padding:0!important;
+}
+.target-v17-center .pct{
+  font-size:58px!important;
+  line-height:1!important;
+  letter-spacing:-1px;
+}
+.target-v17-center .cap,
+.target-v17-center .small{
+  display:none!important;
+}
+@media(max-width:900px){
+  .target-v17-grid{
+    grid-template-columns:1fr!important;
+    gap:18px!important;
+  }
+  .target-v17-ring{
+    width:270px!important;
+    height:270px!important;
+  }
+  .target-v17-ring svg{
+    width:270px!important;
+    height:270px!important;
+  }
+  .target-v17-center .pct{
+    font-size:54px!important;
+  }
+}
+@media(max-width:520px){
+  .target-v17-ring{
+    width:252px!important;
+    height:252px!important;
+  }
+  .target-v17-ring svg{
+    width:252px!important;
+    height:252px!important;
+  }
+  .target-v17-center .pct{
+    font-size:50px!important;
+  }
+  .v19-month-state.v38-gregorian-date{
+    padding:6px 11px!important;
+    font-size:10.5px!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="cloud-loading" class="cloud-loading">جاري تجهيز لوحة DOT ALMASIAH…</div>
@@ -4056,8 +4138,6 @@ renderDashboard = function(main){
             </svg>
             <div class="target-v17-center">
               <div class="pct">${progress.toFixed(1)}%</div>
-              <div class="cap">${statusText}</div>
-              <div class="small">${sold.toLocaleString('en-US')} / ${target.toLocaleString('en-US')} ماسة</div>
             </div>
           </div>
         </div>
@@ -4443,7 +4523,8 @@ function v19PolishDashboard(main){
   if(title){
     const month=currentMonth(), locked=isMonthLocked(month);
     title.parentElement?.classList.add('v19-titlebox');
-    title.outerHTML=`<div class="page-head-titleline"><h2>لوحة التحكم الرئيسية</h2><span class="v19-month-state ${locked?'locked':''}">${escV11(v19MonthLabel(month))} · ${locked?'معتمد ومقفل':'مفتوح للتحديث'}</span></div>`;
+    const todayGregorianV38=new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date()).replaceAll('/',' - ');
+    title.outerHTML=`<div class="page-head-titleline"><h2>لوحة التحكم الرئيسية</h2><span class="v19-month-state v38-gregorian-date" aria-label="تاريخ اليوم الميلادي">▣ ${todayGregorianV38}</span></div>`;
   }
   const sub=main.querySelector('.page-head .sub');
   if(sub) sub.textContent='مؤشرات المتجر والهدف وحالة كشف المذيعين في قراءة تنفيذية واحدة.';

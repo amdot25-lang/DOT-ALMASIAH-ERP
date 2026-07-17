@@ -4786,28 +4786,29 @@ function v19AnnualHistoryHtml(){
 
 renderMonthlyChart = function(container){
   const series=getStoreSeries().filter(r=>r.date);
-  const yearInfo={};
-  series.forEach(r=>{
-    const y=String(r.date).slice(0,4), m=String(r.date).slice(0,7);
-    if(!yearInfo[y]) yearInfo[y]=new Set(); yearInfo[y].add(m);
+
+  // نافذة متحركة: آخر 6 أشهر ميلادية شاملة الشهر الحالي، مهما تغيّر العام.
+  const now=new Date();
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+
+  const byMonth=Object.fromEntries(months.map(m=>[m,0]));
+  series.forEach(e=>{
+    const m=String(e.date).slice(0,7);
+    if(Object.prototype.hasOwnProperty.call(byMonth,m)) byMonth[m]+=num(e.netProfit);
   });
-  const multiYears=Object.keys(yearInfo).filter(y=>yearInfo[y].size>1).sort();
-  const selectedYear=multiYears[multiYears.length-1] || Object.keys(yearInfo).sort().slice(-1)[0];
-  if(!selectedYear){ container.innerHTML='<div class="empty">لا توجد بيانات كافية لعرض الرسم البياني</div>'; return; }
-  const byMonth={};
-  series.filter(r=>String(r.date).startsWith(selectedYear+'-')).forEach(e=>{
-    const m=String(e.date).slice(0,7); byMonth[m]=(byMonth[m]||0)+num(e.netProfit);
-  });
-  const months=Object.keys(byMonth).sort();
-  if(!months.length){ container.innerHTML='<div class="empty">لا توجد بيانات شهرية لهذا العام</div>'; return; }
+
   const max=Math.max(...months.map(m=>Math.abs(byMonth[m])),1);
-  container.innerHTML=`<div class="chart">${months.map(m=>{
+  container.innerHTML=`<div class="chart" dir="ltr">${months.map(m=>{
     const v=byMonth[m], h=Math.max(4,Math.round(Math.abs(v)/max*130));
     const monthName=new Date(Number(m.slice(0,4)),Number(m.slice(5,7))-1,1).toLocaleDateString('en-US',{month:'short'});
     return `<div class="bar-col"><div style="font-size:10px;color:var(--text-dim);">${sar(v)}</div><div class="bar ${v<0?'neg':''}" style="height:${h}px;"></div><div class="lbl">${escV11(monthName)}</div></div>`;
   }).join('')}</div>`;
   const panel=container.closest('.panel');
-  const h3=panel?.querySelector('h3'); if(h3) h3.textContent=`أداء أشهر ${selectedYear} — صافي ربح المتجر`;
+  const h3=panel?.querySelector('h3'); if(h3) h3.textContent='أداء آخر 6 أشهر — صافي ربح المتجر';
 };
 
 function v19EditTarget(){

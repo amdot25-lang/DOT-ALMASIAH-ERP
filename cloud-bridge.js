@@ -6,7 +6,7 @@ import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, colle
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const state = { user:null, profile:null, sales:[], purchases:[], expenses:[], users:[], stats:{stockDiamonds:0}, ready:false, sync:{status:navigator.onLine?'connected':'offline',lastSync:null} };
+const state = { user:null, profile:null, sales:[], purchases:[], expenses:[], stockMovements:[], users:[], stats:{stockDiamonds:0}, ready:false, sync:{status:navigator.onLine?'connected':'offline',lastSync:null} };
 
 const listeners=[];
 function setSync(status,emit=true){
@@ -95,14 +95,14 @@ function subscribe(){
   }));
 
   if(state.profile.role==='owner'){
-    listeners.push(onSnapshot(query(collection(db,'sales'),orderBy('createdAt','desc'),limit(800)),s=>{
+    listeners.push(onSnapshot(query(collection(db,'sales'),orderBy('createdAt','desc')),s=>{
       state.sales=s.docs.map(d=>({id:d.id,...d.data()}));
       state.sync={status:'connected',lastSync:new Date().toISOString()};
       syncApprovedSnapshot(state.sales);
       notify();
     }));
   }else{
-    listeners.push(onSnapshot(query(collection(db,'sales'),where('createdBy','==',state.user.uid),limit(800)),s=>{
+    listeners.push(onSnapshot(query(collection(db,'sales'),where('createdBy','==',state.user.uid)),s=>{
       ownSales.clear();
       for(const d of s.docs)ownSales.set(d.id,{id:d.id,...d.data()});
       state.sync={status:'connected',lastSync:new Date().toISOString()};
@@ -111,20 +111,32 @@ function subscribe(){
   }
 
   if(state.profile.role==='owner'){
-    listeners.push(onSnapshot(query(collection(db,'purchases'),orderBy('createdAt','desc'),limit(800)),s=>{state.purchases=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
-    listeners.push(onSnapshot(query(collection(db,'expenses'),orderBy('createdAt','desc'),limit(800)),s=>{state.expenses=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
+    listeners.push(onSnapshot(query(collection(db,'purchases'),orderBy('createdAt','desc')),s=>{state.purchases=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
+    listeners.push(onSnapshot(query(collection(db,'expenses'),orderBy('createdAt','desc')),s=>{state.expenses=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
+    listeners.push(onSnapshot(query(collection(db,'stockMovements'),orderBy('createdAt','desc')),s=>{state.stockMovements=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
     listeners.push(onSnapshot(query(collection(db,'users'),orderBy('createdAt','desc')),s=>{state.users=s.docs.map(d=>({id:d.id,...d.data()}));state.sync={status:'connected',lastSync:new Date().toISOString()};notify();}));
   }
 }
 
 
+const cleanText=(value,max=500)=>String(value||'').trim().slice(0,max);
 const cleanSaleInput=d=>({
   saleDate:String(d.saleDate||'').slice(0,10),
   diamonds:Number(d.diamonds||0),
   amount:Number(d.amount||0),
-  payment:String(d.payment||'المتجر'),
-  reference:String(d.reference||'').trim(),
-  notes:String(d.notes||'').trim()
+  payment:cleanText(d.payment||'المتجر',40),
+  reference:cleanText(d.reference,120),
+  notes:cleanText(d.notes,1000)
+});
+const stockMovement=(type,quantity,before,after,sourceId,extra={})=>({
+  type,
+  quantity:Number(quantity||0),
+  balanceBefore:Number(before||0),
+  balanceAfter:Number(after||0),
+  sourceId:String(sourceId||''),
+  actor:actorInfo(),
+  createdAt:serverTimestamp(),
+  ...extra
 });
 const saleSnapshot=(id,s)=>({
   id,
@@ -205,6 +217,8 @@ async function updateSaleRecord(id,changes){
       const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
       const approvedSales=[approvedSummary(updatedSale),...current.filter(x=>String(x.id)!==String(id))].slice(0,500);
       tx.set(stref,{stockDiamonds:newStock,approvedSales,lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+      const mref=doc(collection(db,'stockMovements'));
+      tx.set(mref,stockMovement('sale_edit',Number(old.diamonds||0)-Number(next.diamonds||0),cur,newStock,id,{saleId:id,orderNumber:String(old.orderNumber||''),reason:'تعديل عملية معتمدة'}));
     }
     tx.update(sref,patch);
   });
@@ -236,12 +250,15 @@ async function cancelSaleRecord(id){
     if(sale.status==='approved'){
       const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0);
       const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
+      const newStock=cur+Number(sale.diamonds||0);
       tx.set(stref,{
-        stockDiamonds:cur+Number(sale.diamonds||0),
+        stockDiamonds:newStock,
         approvedSales:current.filter(x=>String(x.id)!==String(id)),
         lastUpdatedAt:serverTimestamp(),
         approvedSalesUpdatedAt:serverTimestamp()
       },{merge:true});
+      const mref=doc(collection(db,'stockMovements'));
+      tx.set(mref,stockMovement('sale_cancel',Number(sale.diamonds||0),cur,newStock,id,{saleId:id,orderNumber:String(sale.orderNumber||''),reason:'إلغاء عملية معتمدة'}));
     }
     tx.update(sref,patch);
   });
@@ -484,11 +501,11 @@ const api={
   mine:()=>{const regular=state.sales.filter(x=>!x.requestType);return state.profile?.role==='owner'?regular:regular.filter(x=>x.status==='approved'||x.createdBy===state.user?.uid)},
   changeRequests:()=>state.sales.filter(x=>x.requestType),
   logout:()=>signOut(auth),
-  addSale:async d=>addDoc(collection(db,'sales'),{...d,status:'pending',createdBy:state.user.uid,createdByName:(state.profile.name&&!String(state.profile.name).includes('@')?state.profile.name:(state.user.displayName||String(state.user.email||'').split('@')[0])),createdByEmail:state.user.email,createdAt:serverTimestamp(),updatedAt:serverTimestamp()}),
+  addSale:async d=>{const clean=cleanSaleInput(d);return addDoc(collection(db,'sales'),{...clean,orderNumber:cleanText(d.orderNumber,80),status:'pending',createdBy:state.user.uid,createdByName:(state.profile.name&&!String(state.profile.name).includes('@')?state.profile.name:(state.user.displayName||String(state.user.email||'').split('@')[0])),createdByEmail:state.user.email,createdAt:serverTimestamp(),updatedAt:serverTimestamp()});},
   updateSale:updateSaleRecord,
   cancelSale:cancelSaleRecord,
-  addPurchase:async d=>runTransaction(db,async tx=>{const sref=doc(db,'publicStats','current'),pref=doc(collection(db,'purchases')),ss=await tx.get(sref),cur=Number(ss.data()?.stockDiamonds||0);tx.set(pref,{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()});tx.set(sref,{stockDiamonds:cur+Number(d.diamonds||0),lastUpdatedAt:serverTimestamp()},{merge:true});}),
-  addExpense:async d=>addDoc(collection(db,'expenses'),{...d,createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()}),
+  addPurchase:async d=>runTransaction(db,async tx=>{const sref=doc(db,'publicStats','current'),pref=doc(collection(db,'purchases')),mref=doc(collection(db,'stockMovements')),ss=await tx.get(sref),cur=Number(ss.data()?.stockDiamonds||0),qty=Number(d.diamonds||0),newStock=cur+qty;tx.set(pref,{...d,supplier:cleanText(d.supplier,160),notes:cleanText(d.notes,1000),createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()});tx.set(sref,{stockDiamonds:newStock,lastUpdatedAt:serverTimestamp()},{merge:true});tx.set(mref,stockMovement('purchase',qty,cur,newStock,pref.id,{purchaseId:pref.id,supplier:cleanText(d.supplier,160),amount:Number(d.amount||0)}));}),
+  addExpense:async d=>addDoc(collection(db,'expenses'),{...d,category:cleanText(d.category,80),payee:cleanText(d.payee,160),payment:cleanText(d.payment,80),reference:cleanText(d.reference,120),createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()}),
   decide:async(id,status,reason='')=>runTransaction(db,async tx=>{
     reason=String(reason||'').trim();
     if(status==='rejected'&&!reason)throw new Error('سبب الرفض مطلوب.');
@@ -514,13 +531,18 @@ const api={
             const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
             const approvedSales=[approvedSummary({id:sale.targetSaleId,...target,...targetPatch,status:'approved'}),...current.filter(x=>String(x.id)!==String(sale.targetSaleId))].slice(0,500);
             tx.set(stref,{stockDiamonds:newStock,approvedSales,lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+            const mref=doc(collection(db,'stockMovements'));
+            tx.set(mref,stockMovement('sale_edit_request',Number(target.diamonds||0)-Number(next.diamonds||0),cur,newStock,sale.targetSaleId,{saleId:sale.targetSaleId,requestId:id,orderNumber:String(target.orderNumber||''),reason:'اعتماد طلب تعديل'}));
           }
           tx.update(targetRef,targetPatch);
         }else if(sale.requestType==='cancel'){
           if(target.status==='approved'){
             const st=await tx.get(stref),data=st.data()||{},cur=Number(data.stockDiamonds||0);
             const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
-            tx.set(stref,{stockDiamonds:cur+Number(target.diamonds||0),approvedSales:current.filter(x=>String(x.id)!==String(sale.targetSaleId)),lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+            const newStock=cur+Number(target.diamonds||0);
+            tx.set(stref,{stockDiamonds:newStock,approvedSales:current.filter(x=>String(x.id)!==String(sale.targetSaleId)),lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+            const mref=doc(collection(db,'stockMovements'));
+            tx.set(mref,stockMovement('sale_cancel_request',Number(target.diamonds||0),cur,newStock,sale.targetSaleId,{saleId:sale.targetSaleId,requestId:id,orderNumber:String(target.orderNumber||''),reason:'اعتماد طلب إلغاء'}));
           }
           tx.update(targetRef,{
             status:'cancelled',
@@ -542,7 +564,10 @@ const api={
       const current=Array.isArray(data.approvedSales)?data.approvedSales:[];
       const summary=approvedSummary({id,...sale,status:'approved'});
       const approvedSales=[summary,...current.filter(x=>String(x.id)!==String(id))].slice(0,500);
-      tx.set(stref,{stockDiamonds:cur-qty,approvedSales,lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+      const newStock=cur-qty;
+      tx.set(stref,{stockDiamonds:newStock,approvedSales,lastUpdatedAt:serverTimestamp(),approvedSalesUpdatedAt:serverTimestamp()},{merge:true});
+      const mref=doc(collection(db,'stockMovements'));
+      tx.set(mref,stockMovement('sale_approved',-qty,cur,newStock,id,{saleId:id,orderNumber:String(sale.orderNumber||''),amount:Number(sale.amount||0)}));
       patch.stockDeducted=qty;
     }
     tx.update(sref,patch);

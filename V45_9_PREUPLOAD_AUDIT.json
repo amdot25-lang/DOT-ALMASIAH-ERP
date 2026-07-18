@@ -1,0 +1,30 @@
+{
+  "version": "45.9",
+  "release_type": "safe maintenance",
+  "data_migrations": 0,
+  "historical_data_modified": false,
+  "visual_layout_changed": false,
+  "firestore_hasOnly_regular_sales": true,
+  "firestore_hasOnly_change_requests": true,
+  "static_dom_duplicate_ids": {},
+  "source_literal_duplicate_ids_remaining": {
+    "${e.id}": 2,
+    "f-notes": 2,
+    "${g.id}": 3,
+    "copy-manager-report": 2,
+    "close-manager-report": 2,
+    "monthly-diamond-target": 2,
+    "save-monthly-target": 2,
+    "${r.id}": 2,
+    "export-monthly-report-v14": 2
+  },
+  "remaining_duplicate_note": "Remaining source duplicates are conditional/dynamic modal or replaced-template IDs; they do not coexist in the runtime DOM.",
+  "legacy_primary_interface": false,
+  "legacy_archive_copy": true,
+  "checks": [
+    "JavaScript syntax",
+    "HTML parse",
+    "rules structural assertions",
+    "archive compatibility"
+  ]
+}

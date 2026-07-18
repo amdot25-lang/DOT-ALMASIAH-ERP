@@ -1,0 +1,20 @@
+{
+  "version": "45.8",
+  "scope": "safe internal hardening without UI or historical-data changes",
+  "checks": {
+    "cloud_bridge_syntax": "passed",
+    "dashboard_inline_scripts_syntax": "passed",
+    "app_js_syntax": "passed",
+    "legacy_data_modified": false,
+    "ui_structure_changed": false,
+    "sales_query_truncation_removed": true,
+    "stock_movement_ledger_added": true,
+    "firestore_rules_hardened": true,
+    "additional_output_escaping_added": true
+  },
+  "notes": [
+    "Stock movement ledger starts with transactions created after deployment.",
+    "Existing historical records remain untouched.",
+    "Deploy firestore.rules together with the site files."
+  ]
+}

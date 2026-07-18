@@ -5,6 +5,43 @@ service cloud.firestore {
     function isOwner() { return signedIn() && request.auth.token.email == 'amdot25@gmail.com'; }
     function myUser() { return get(/databases/$(database)/documents/users/$(request.auth.uid)); }
     function activeSupervisor() { return signedIn() && myUser().data.role == 'supervisor' && myUser().data.status == 'active'; }
+    function validSaleNumbers() { return request.resource.data.diamonds is number && request.resource.data.diamonds >= 0 && request.resource.data.amount is number && request.resource.data.amount >= 0; }
+    function validSaleText() { return request.resource.data.saleDate is string && request.resource.data.saleDate.size() <= 10 && request.resource.data.payment is string && request.resource.data.payment.size() <= 40 && request.resource.data.reference is string && request.resource.data.reference.size() <= 120 && request.resource.data.notes is string && request.resource.data.notes.size() <= 1000; }
+    function validRegularSaleKeys() {
+      return request.resource.data.keys().hasOnly([
+        'saleDate', 'diamonds', 'amount', 'payment', 'reference', 'notes',
+        'orderNumber', 'status', 'createdBy', 'createdByName', 'createdByEmail',
+        'createdAt', 'updatedAt'
+      ]);
+    }
+    function validChangeRequestKeys() {
+      return request.resource.data.keys().hasOnly([
+        'requestType', 'targetSaleId', 'targetOrderNumber', 'targetSnapshot',
+        'proposedSale', 'saleDate', 'diamonds', 'amount', 'payment', 'reference',
+        'notes', 'status', 'createdBy', 'createdByName', 'createdByEmail',
+        'createdAt', 'updatedAt'
+      ]);
+    }
+    function validSupervisorSale() {
+      return request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdByEmail == request.auth.token.email
+        && request.resource.data.createdByName is string
+        && request.resource.data.createdByName.size() <= 160
+        && request.resource.data.orderNumber is string
+        && request.resource.data.orderNumber.size() <= 80
+        && validSaleNumbers()
+        && validSaleText();
+    }
+    function validOwnChangeRequest() {
+      return request.resource.data.requestType in ['edit', 'cancel']
+        && request.resource.data.targetSaleId is string
+        && request.resource.data.targetSaleId.size() <= 160
+        && request.resource.data.targetOrderNumber is string
+        && request.resource.data.targetOrderNumber.size() <= 80
+        && exists(/databases/$(database)/documents/sales/$(request.resource.data.targetSaleId))
+        && get(/databases/$(database)/documents/sales/$(request.resource.data.targetSaleId)).data.createdBy == request.auth.uid;
+    }
 
     match /users/{uid} {
       allow create: if signedIn() && request.auth.uid == uid
@@ -17,9 +54,13 @@ service cloud.firestore {
     }
 
     match /sales/{saleId} {
-      allow create: if isOwner() || (activeSupervisor()
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.status == 'pending');
+      allow create: if isOwner() || (activeSupervisor() && validSupervisorSale()
+        && ((!('requestType' in request.resource.data)
+              && validRegularSaleKeys()
+              && request.resource.data.diamonds > 0)
+            || (('requestType' in request.resource.data)
+              && validChangeRequestKeys()
+              && validOwnChangeRequest())));
       allow read: if isOwner() || (activeSupervisor() && (resource.data.status == 'approved' || resource.data.createdBy == request.auth.uid));
       allow update: if isOwner();
       allow delete: if false;
@@ -32,6 +73,7 @@ service cloud.firestore {
 
     match /purchases/{id} { allow read, create: if isOwner(); allow update, delete: if false; }
     match /expenses/{id} { allow read, create: if isOwner(); allow update, delete: if false; }
+    match /stockMovements/{id} { allow read, create: if isOwner(); allow update, delete: if false; }
 
     match /storeEntries/{id} { allow read, write: if isOwner(); }
     match /broadcasterCommissions/{id} { allow read, write: if isOwner(); }

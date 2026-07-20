@@ -1,6 +1,6 @@
 import { firebaseConfig, OWNER_EMAIL } from './firebase-config.js';
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
-import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
+import { initializeApp, deleteApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, collection, addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp, runTransaction, writeBatch } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 
 const app = initializeApp(firebaseConfig);
@@ -58,7 +58,8 @@ async function ensureProfile(user){
   const ref=doc(db,'users',user.uid), snap=await getDoc(ref);
   const owner=(user.email||'').toLowerCase()===OWNER_EMAIL.toLowerCase();
   if(!snap.exists()){
-    const p={uid:user.uid,email:user.email,name:user.displayName||user.email,role:owner?'owner':'supervisor',status:owner?'active':'pending',createdAt:serverTimestamp()};
+    if(!owner)throw new Error('هذا الحساب غير مضاف من قبل المالك.');
+    const p={uid:user.uid,email:user.email,name:user.displayName||user.email,role:'owner',status:'active',createdAt:serverTimestamp()};
     await setDoc(ref,p); return p;
   }
   let p=snap.data();
@@ -492,6 +493,37 @@ function subscribeBroadcasterCloud(){
 }
 
 
+async function createSupervisorAccount({name,email,password}){
+  if(state.profile?.role!=='owner')throw new Error('هذه العملية متاحة للمالك فقط.');
+  name=String(name||'').trim();
+  email=String(email||'').trim().toLowerCase();
+  password=String(password||'');
+  if(!name)throw new Error('اسم المشرف مطلوب.');
+  if(!email || !email.includes('@'))throw new Error('البريد الإلكتروني غير صحيح.');
+  if(password.length<6)throw new Error('كلمة المرور يجب ألا تقل عن 6 أحرف.');
+  const secondaryApp=initializeApp(firebaseConfig,`supervisor-creator-${Date.now()}`);
+  const secondaryAuth=getAuth(secondaryApp);
+  try{
+    const credential=await createUserWithEmailAndPassword(secondaryAuth,email,password);
+    await updateProfile(credential.user,{displayName:name});
+    await setDoc(doc(db,'users',credential.user.uid),{
+      uid:credential.user.uid,email,name,role:'supervisor',status:'pending',
+      createdBy:state.user.uid,createdByEmail:state.user.email,createdAt:serverTimestamp()
+    });
+    await signOut(secondaryAuth);
+    return credential.user.uid;
+  }catch(err){
+    const map={
+      'auth/email-already-in-use':'البريد مسجل مسبقًا.',
+      'auth/invalid-email':'البريد الإلكتروني غير صحيح.',
+      'auth/weak-password':'كلمة المرور ضعيفة.'
+    };
+    throw new Error(map[err.code]||err.message||'تعذر إنشاء حساب المشرف.');
+  }finally{
+    try{await deleteApp(secondaryApp)}catch(_){ }
+  }
+}
+
 const api={
   state,
   broadcasterCloud:broadcasterCloudState,
@@ -572,15 +604,21 @@ const api={
     }
     tx.update(sref,patch);
   }),
+  createSupervisor:createSupervisorAccount,
   setUserStatus:(uid,status)=>updateDoc(doc(db,'users',uid),{status,updatedAt:serverTimestamp()}),
   setUserName:(uid,name)=>updateDoc(doc(db,'users',uid),{name:String(name||'').trim(),updatedAt:serverTimestamp()})
 };
 window.DOT_CLOUD=api;
 onAuthStateChanged(auth,async user=>{
   if(!user){location.replace('./index.html');return;}
-  state.user=user;state.profile=await ensureProfile(user);
-  if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
-  state.ready=true;subscribe();subscribeBroadcasterCloud();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
+  try{
+    state.user=user;state.profile=await ensureProfile(user);
+    if(state.profile.role!=='owner'&&state.profile.status!=='active'){alert('حساب المشرف بانتظار تفعيل المالك.');await signOut(auth);return;}
+    state.ready=true;subscribe();subscribeBroadcasterCloud();notify();window.dispatchEvent(new CustomEvent('dot-cloud-ready',{detail:state}));
+  }catch(err){
+    alert(err.message||'هذا الحساب غير مصرح له بالدخول.');
+    await signOut(auth);
+  }
 });
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});

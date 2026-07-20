@@ -44,10 +44,17 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.data.email == request.auth.token.email
-        && ((request.auth.token.email == 'amdot25@gmail.com' && request.resource.data.role == 'owner')
-            || (request.resource.data.role == 'supervisor' && request.resource.data.status == 'pending'));
+      allow create: if isOwner()
+        && request.resource.data.uid == uid
+        && request.resource.data.email is string
+        && request.resource.data.name is string
+        && ((uid == request.auth.uid
+              && request.resource.data.email == request.auth.token.email
+              && request.resource.data.role == 'owner'
+              && request.resource.data.status == 'active')
+            || (uid != request.auth.uid
+              && request.resource.data.role == 'supervisor'
+              && request.resource.data.status == 'pending'));
       allow read: if isOwner() || (signedIn() && request.auth.uid == uid);
       allow update: if isOwner();
       allow delete: if false;

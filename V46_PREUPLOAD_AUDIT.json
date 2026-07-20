@@ -1,0 +1,11 @@
+{
+  "version": "v46",
+  "change": "owner-only-supervisor-creation",
+  "modified_files": [
+    "index.html",
+    "dashboard.html",
+    "cloud-bridge.js",
+    "firestore.rules",
+    "CHANGELOG_v46.md"
+  ]
+}
